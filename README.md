@@ -14,6 +14,7 @@ Funciona em Android e iPhone, direto do navegador.
   e no descanso aparece o próximo exercício. As fotos vêm do free-exercise-db (domínio público, licença Unlicense).
   Polichinelo, corrida parada, burpee e prancha com toque nos ombros não existem nesse banco, então foram desenhados para o app.
   Envie também a pasta `img` para o GitHub, junto com os outros arquivos.
+- **Academia (treinos A, B, C e D):** editáveis no app (exercícios, séries, repetições, carga e descanso), com player de séries, cronômetro de descanso e registro de cargas no histórico.
 - Cada treino concluído fica marcado na semana, e tudo vai para o histórico.
 
 Ajustes que o app faz na ficha de casa: o número de séries segue a tabela de progressão (3 séries nas semanas 1 e 2,

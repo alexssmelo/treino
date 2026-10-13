@@ -54,7 +54,7 @@ const CDN = `https://www.gstatic.com/firebasejs/${V}/`;
       const r = snap.exists() ? snap.data() : {};
       const remote = {
         done: r.done || {}, evo: r.evo || {}, deleted: r.deleted || {},
-        settings: r.settings || null, settingsT: r.settingsT || 0,
+        settings: r.settings || null, settingsT: r.settingsT || 0, gym: r.gym || {},
         history: ws.docs.map(d => fromDoc(d.data()))
       };
       const merged = T.merge(remote);
@@ -73,7 +73,7 @@ const CDN = `https://www.gstatic.com/firebasejs/${V}/`;
       }
       await FS.setDoc(uref, clean({
         done: merged.done, evo: merged.evo, deleted: merged.deleted,
-        settings: merged.settings, settingsT: merged.settingsT || 0
+        settings: merged.settings, settingsT: merged.settingsT || 0, gym: merged.gym || {}
       }), { merge: true });
       emit('ok');
     } catch (e) {
