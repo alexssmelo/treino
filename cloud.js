@@ -99,10 +99,8 @@ const CDN = `https://www.gstatic.com/firebasejs/${V}/`;
       p.setCustomParameters({ prompt: 'select_account' });
       try { await AU.signInWithPopup(auth, p); }
       catch (e) {
-        // celulares que bloqueiam a janela do Google: usa redirecionamento
         if (e && (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment')) {
-          await AU.signInWithRedirect(auth, p);
-          return;
+          const er = new Error('popup-blocked'); er.code = 'treino/google-indisponivel'; throw er;
         }
         throw e;
       }
