@@ -175,6 +175,8 @@
   .linkbtn { background: none; border: 0; color: var(--accent); font-weight: 600; padding: 8px 0 8px 8px; cursor: pointer; }
   .check { display: flex; align-items: center; gap: 10px; margin-top: 14px; font-size: 15px; }
   .check input { width: 22px; height: 22px; accent-color: var(--accent); }
+  #snd { width: 100%; padding: 13px 14px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--bg); font-size: 17px; }
+  #vol { width: 100%; accent-color: var(--accent); height: 32px; }
 
   /* planos */
   .weeks { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 12px; scrollbar-width: thin; }
@@ -294,9 +296,19 @@
           <input id="weight" type="number" inputmode="decimal" min="30" max="250" step="0.1" value="70">
           <span>kg</span>
         </div>
-        <p class="hint">O peso é usado para estimar as calorias. Fica salvo só neste aparelho.</p>
+        <p class="hint">O peso é usado para estimar as calorias. Fica salvo na sua conta.</p>
       </div>
-      <label class="check"><input type="checkbox" id="voice" checked> Avisos por voz, som e vibração nos treinos guiados</label>
+      <div class="panel" style="margin-top:14px">
+        <label class="field-label" for="snd">Avisos nos treinos</label>
+        <select id="snd">
+          <option value="all">Voz, bipe e vibração</option>
+          <option value="beep">Só bipe e vibração (sem voz)</option>
+          <option value="off">Desligado</option>
+        </select>
+        <label class="field-label" for="vol" style="margin-top:14px">Volume do bipe</label>
+        <input type="range" id="vol" min="0" max="100" step="5" value="50">
+        <button class="btn small secondary" id="btn-snd-test" type="button" style="margin-top:10px">Testar aviso</button>
+      </div>
       <p id="setup-error" class="hint" style="color: var(--danger)" role="alert"></p>
       <button class="btn start" id="btn-start">Iniciar treino</button>
       <p class="hint">Mantenha a tela ligada durante o treino. No iPhone, o GPS pode parar se o app ficar em segundo plano.</p>
@@ -449,26 +461,34 @@
   /* ---------- preferências ---------- */
   const SNAP_KEY = 'snapshot', HIST_KEY = 'history', SET_KEY = 'settings',
         DONE_KEY = 'done', EVO_KEY = 'evo', DEL_KEY = 'deleted', GYM_KEY = 'gym';
-  const loadPrefs = () => Object.assign({ weight: 70, act: 'run', voice: true }, store.get(SET_KEY, {}));
+  const loadPrefs = () => Object.assign({ weight: 70, act: 'run', voice: true, mode: 'all', vol: 50 }, store.get(SET_KEY, {}));
   let prefs = loadPrefs();
   function savePrefs() { prefs.t = Date.now(); store.set(SET_KEY, prefs); changed(); }
 
   /* ---------- avisos: som, vibração e voz ---------- */
   let audioCtx = null;
+  const sound = () => !prefs.voice ? 'off' : (prefs.mode === 'beep' ? 'beep' : 'all');
+  const applySoundInputs = () => { $('#snd').value = sound(); $('#vol').value = prefs.vol; };
+  function syncSound() {
+    const v = $('#snd').value;
+    prefs.voice = v !== 'off';
+    if (v !== 'off') prefs.mode = v;
+    prefs.vol = clampInt($('#vol').value, 0, 100, 50);
+  }
   function beep(freq = 880, ms = 160) {
-    if (!prefs.voice) return;
+    if (sound() === 'off') return;
     try {
       audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === 'suspended') audioCtx.resume();
       const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-      o.frequency.value = freq; g.gain.value = 0.25;
+      o.frequency.value = freq; g.gain.value = 0.03 + 0.5 * (prefs.vol / 100);
       o.connect(g); g.connect(audioCtx.destination);
       o.start(); o.stop(audioCtx.currentTime + ms / 1000);
     } catch {}
   }
-  function buzz(p) { if (!prefs.voice) return; try { navigator.vibrate && navigator.vibrate(p); } catch {} }
+  function buzz(p) { if (sound() === 'off') return; try { navigator.vibrate && navigator.vibrate(p); } catch {} }
   function say(text, cancel = false) {
-    if (!prefs.voice) return;
+    if (sound() !== 'all') return;
     try {
       if (!('speechSynthesis' in window)) return;
       if (cancel) speechSynthesis.cancel();
@@ -682,6 +702,7 @@
       S.splits.push({ km: S.splits.length + 1, ms });
       S.lastSplitMs = el;
       say(`Quilômetro ${S.splits.length}. ${spoken(ms)}.`);
+      if (sound() === 'beep') { beep(1200, 120); setTimeout(() => beep(1200, 120), 220); buzz([150, 80, 150]); }
     }
   }
 
@@ -703,6 +724,10 @@
     while (!G.finished && guard++ < 10) {
       const st = G.steps[G.idx];
       const done = st.k === 'goal' ? (S.dist - G.stepStartDist >= st.km * 1000) : (el - G.stepStartMs >= st.sec * 1000);
+      if (!done && st.k !== 'goal' && st.sec > 10) {
+        const sc = Math.ceil((st.sec * 1000 - (el - G.stepStartMs)) / 1000);
+        if (sc >= 1 && sc <= 3 && G.cd !== G.idx * 10 + sc) { G.cd = G.idx * 10 + sc; beep(sc === 1 ? 880 : 660, 90); }
+      }
       if (!done) break;
       G.stepStartMs = st.k === 'goal' ? el : G.stepStartMs + st.sec * 1000;
       G.stepStartDist = S.dist;
@@ -828,7 +853,7 @@
     const w = readWeight();
     if (!w) return;
     const act = opts.act || document.querySelector('input[name="act"]:checked').value;
-    prefs.weight = w; prefs.voice = $('#voice').checked;
+    prefs.weight = w; syncSound();
     if (!opts.act) prefs.act = act;
     savePrefs();
 
@@ -1033,7 +1058,7 @@
     if (!wt) return;
     const w = gymGet()[L];
     if (!w.ex.length) return;
-    prefs.weight = wt; prefs.voice = $('#voice').checked; savePrefs();
+    prefs.weight = wt; syncSound(); savePrefs();
     const steps = [], rest = w.rest;
     w.ex.forEach((e, ei) => {
       for (let s = 1; s <= e.s; s++) {
@@ -1054,7 +1079,7 @@
     if (busy()) return;
     const wt = readWeight();
     if (!wt) return;
-    prefs.weight = wt; prefs.voice = $('#voice').checked; savePrefs();
+    prefs.weight = wt; syncSound(); savePrefs();
     Object.assign(P, { on: true, steps: buildHome(day, w - 1), i: 0, paused: false, pausedTotal: 0, t0: Date.now(), w, day, kind: 'home', gym: '' });
     P.mediaKey = null; P.kgI = -1;
     selectTab('train');
@@ -1325,6 +1350,13 @@
     }
     gymSave(g, L);
   });
+  $('#snd').addEventListener('change', () => { syncSound(); savePrefs(); });
+  $('#vol').addEventListener('change', () => { syncSound(); savePrefs(); });
+  $('#btn-snd-test').addEventListener('click', () => {
+    syncSound(); savePrefs();
+    if (sound() === 'off') { alert('Os avisos estão desligados. Escolha uma opção para testar.'); return; }
+    cue('Aviso de teste. Corra leve.', 988, true);
+  });
   $('#pl-kg').addEventListener('change', () => {
     if (!(P.on && P.kind === 'gym')) return;
     const st = P.steps[P.i]; if (!st || !st.ex) return;
@@ -1525,7 +1557,7 @@
 
   function applyPrefsToInputs() {
     $('#weight').value = prefs.weight;
-    $('#voice').checked = !!prefs.voice;
+    applySoundInputs();
     const r = document.querySelector(`input[name="act"][value="${prefs.act}"]`);
     if (r) r.checked = true;
   }
@@ -1534,7 +1566,7 @@
     return {
       history: store.get(HIST_KEY, []), done: store.get(DONE_KEY, {}), evo: store.get(EVO_KEY, {}),
       deleted: store.get(DEL_KEY, {}), gym: store.get(GYM_KEY, {}),
-      settings: { weight: prefs.weight, act: prefs.act, voice: !!prefs.voice }, settingsT: prefs.t || 0
+      settings: { weight: prefs.weight, act: prefs.act, voice: !!prefs.voice, mode: prefs.mode, vol: prefs.vol }, settingsT: prefs.t || 0
     };
   }
   // Junta dados remotos com os locais (nada é perdido) e devolve o resultado.
@@ -1726,7 +1758,7 @@
 
   /* ---------- início ---------- */
   $('#weight').value = prefs.weight;
-  $('#voice').checked = !!prefs.voice;
+  applySoundInputs();
   const r0 = document.querySelector(`input[name="act"][value="${prefs.act}"]`);
   if (r0) r0.checked = true;
   if (store.get(SNAP_KEY, null)) $('#resume-banner').hidden = false;
