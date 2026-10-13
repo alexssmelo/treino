@@ -6,7 +6,10 @@ const V = '10.12.5';
 const CDN = `https://www.gstatic.com/firebasejs/${V}/`;
 
 (async () => {
-  if (!firebaseConfig || !firebaseConfig.apiKey) return;           // nuvem não configurada
+  if (!firebaseConfig || !firebaseConfig.apiKey) {                 // nuvem não configurada: app abre sem login
+    window.dispatchEvent(new Event('treino:cloud-off'));
+    return;
+  }
   const T = window.TreinoApp;
   if (!T) return;
 
@@ -17,7 +20,10 @@ const CDN = `https://www.gstatic.com/firebasejs/${V}/`;
       import(CDN + 'firebase-auth.js'),
       import(CDN + 'firebase-firestore.js')
     ]);
-  } catch { return; }                                              // sem internet: segue só local
+  } catch {                                                        // sem internet para carregar o Firebase
+    window.dispatchEvent(new Event('treino:cloud-fail'));
+    return;
+  }
 
   const app = A.initializeApp(firebaseConfig);
   const auth = AU.getAuth(app);
@@ -88,6 +94,19 @@ const CDN = `https://www.gstatic.com/firebasejs/${V}/`;
       T.setUser({ uid: c.user.uid, name, email });
       sync();
     },
+    async google() {
+      const p = new AU.GoogleAuthProvider();
+      p.setCustomParameters({ prompt: 'select_account' });
+      try { await AU.signInWithPopup(auth, p); }
+      catch (e) {
+        // celulares que bloqueiam a janela do Google: usa redirecionamento
+        if (e && (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment')) {
+          await AU.signInWithRedirect(auth, p);
+          return;
+        }
+        throw e;
+      }
+    },
     reset(email) { return AU.sendPasswordResetEmail(auth, email); },
     signOut() { return AU.signOut(auth); }
   };
@@ -96,6 +115,7 @@ const CDN = `https://www.gstatic.com/firebasejs/${V}/`;
     if (u) { T.setUser({ uid: u.uid, name: u.displayName || '', email: u.email || '' }); sync(); }
     else T.setUser(null);
   });
+  AU.getRedirectResult(auth).catch(() => {});                      // conclui o login por redirecionamento
   window.dispatchEvent(new Event('treino:cloud-ready'));
 
   window.addEventListener('treino:changed', () => { clearTimeout(timer); timer = setTimeout(sync, 1500); });

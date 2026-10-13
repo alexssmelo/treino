@@ -35,3 +35,9 @@ O plano gratuito (Spark) do Firebase atende bem esse uso.
 - O app mescla os dados (não apaga nada de nenhum lado). Excluir um treino em um aparelho exclui nos outros.
 - A `apiKey` do Firebase não é segredo; quem protege os dados são as regras do passo 3.
 - Recuperar senha: toque em *Esqueci a senha* na tela de login e o Firebase envia o e-mail.
+
+## Login com Google
+O app tem o botão **Continuar com o Google** na tela de login. Para funcionar:
+1. No Firebase, **Authentication > Método de login** deve ter **Google** ativado (já está no seu projeto).
+2. **Authentication > Configurações > Domínios autorizados** deve ter `alexssmelo.github.io`.
+Cada pessoa precisa entrar (ou criar conta) para abrir o app.

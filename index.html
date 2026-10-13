@@ -212,7 +212,8 @@
   .media { margin: 10px 0 0; border-radius: 14px; overflow: hidden; background: var(--surface); border: 1px solid var(--line); aspect-ratio: 3 / 2; max-height: 32vh; margin-inline: auto; }
   .media .f { display: none; width: 100%; height: 100%; }
   .media .f.on { display: block; }
-  .media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .media { background: #fff; }
+  .media img { width: 100%; height: 100%; object-fit: contain; display: block; }
   .fig { width: 100%; height: 100%; display: block; padding: 6px; }
   @media (prefers-reduced-motion: reduce) {
     .media { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); max-height: none; aspect-ratio: auto; }
@@ -233,15 +234,32 @@
   .ok { color: #166534; }
   @media (prefers-color-scheme: dark) { .ok { color: #86EFAC; } }
 
+
+  /* tela de login */
+  .gated .app { display: none; }
+  .gate { min-height: 100vh; min-height: 100dvh; display: flex; align-items: center; justify-content: center; padding: 24px 18px; }
+  .gate-card { width: 100%; max-width: 420px; background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 26px 22px; }
+  .gate-card h1 { font-family: var(--display); font-weight: 700; font-size: 44px; line-height: 1; margin: 0 0 6px; }
+  .gate-card .lead { color: var(--muted); margin: 0 0 20px; }
+  .gbtn { width: 100%; min-height: 54px; border-radius: 14px; border: 1.5px solid #CBD6DF; background: #fff; color: #1F2937; font-weight: 600; font-size: 17px; display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; }
+  .gbtn svg { width: 22px; height: 22px; flex: none; }
+  .gbtn:disabled, .btn:disabled { opacity: .6; cursor: default; }
+  .or { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 14px; margin: 18px 0 14px; }
+  .or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .gate-card .tabs.two { margin-bottom: 0; }
+  .gate-card form .btn { margin-top: 16px; }
+  .gate-note { color: var(--muted); font-size: 14px; text-align: center; margin: 16px 0 0; }
+
   @media (prefers-reduced-motion: no-preference) {
     .fill { transition: width .4s linear; }
   }
 </style>
 </head>
 <body>
+<div class="gate" id="gate" hidden></div>
 <div class="app">
   <header class="top">
-    <div class="top-row"><h1>Treino</h1><button class="acct-btn" id="btn-acct" hidden>Entrar</button></div>
+    <div class="top-row"><h1>Treino</h1><button class="acct-btn" id="btn-acct" hidden>Conta</button></div>
     <div class="tabs" role="tablist" aria-label="Seções">
       <button class="tab" role="tab" id="tab-train" aria-selected="true" aria-controls="view-train">Treino</button>
       <button class="tab" role="tab" id="tab-plans" aria-selected="false" aria-controls="view-plans">Planos</button>
@@ -725,6 +743,7 @@
 
   /* ---------- ciclo do treino com GPS ---------- */
   function tick() {
+    updateGate();
     if (P.on) pTick();
     if (S.status === 'idle') return;
     if (S.status === 'running') {
@@ -894,17 +913,18 @@
   /* ---------- imagens dos exercícios ---------- */
   // Fotos: free-exercise-db (domínio público). Desenhos animados: feitos para este app.
   const ph = (k, idx = [0, 1]) => ({ photo: k, idx });
+  const FIG = f => ({ fig: f });
   const MEDIA_MAP = {
-    'Agachamento': ph('agachamento'), 'Agachamento com pausa': ph('agachamento'),
-    'Mountain climber': ph('mountain'), 'Abdominal bicicleta': ph('bicicleta'),
-    'Prancha': ph('prancha', [1]), 'Flexão de braços': ph('flexao'), 'Flexão': ph('flexao'),
-    'Afundo alternado': ph('afundo'), 'Afundo': ph('afundo'), 'Ponte de glúteos': ph('ponte'),
-    'Superman': ph('superman'), 'Elevação de pernas': ph('elevacao'),
-    'Prancha lateral, lado esquerdo': ph('lateral'), 'Prancha lateral, lado direito': ph('lateral'),
-    'Abdominal reverso': ph('reverso'),
-    'Polichinelo': { svg: 'jack' }, 'Corrida parada': { svg: 'knees' },
-    'Corrida parada com joelhos altos': { svg: 'knees' }, 'Burpee sem salto': { svg: 'burpee' },
-    'Prancha tocando os ombros': { svg: 'taps' }
+    'Polichinelo': FIG('ter-polichinelo'), 'Agachamento': FIG('seg-agachamento'),
+    'Agachamento com pausa': FIG('qui-agachamento'),
+    'Corrida parada': FIG('ter-corrida'), 'Corrida parada com joelhos altos': FIG('ter-corrida'),
+    'Mountain climber': FIG('ter-mountain'), 'Abdominal bicicleta': FIG('ter-bicicleta'),
+    'Prancha': FIG('seg-prancha'), 'Flexão de braços': FIG('seg-flexao'), 'Flexão': FIG('qui-flexao'),
+    'Afundo alternado': FIG('seg-afundo'), 'Afundo': FIG('qui-afundo'), 'Ponte de glúteos': FIG('seg-ponte'),
+    'Superman': FIG('seg-superman'), 'Elevação de pernas': FIG('ter-elevacao'),
+    'Prancha lateral, lado esquerdo': FIG('qui-lateral'), 'Prancha lateral, lado direito': FIG('qui-lateral'),
+    'Abdominal reverso': FIG('qui-reverso'), 'Burpee sem salto': FIG('sex-burpee'),
+    'Prancha tocando os ombros': FIG('qui-prancha-ombros')
   };
   const L = (x1, y1, x2, y2, hot) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"${hot ? ' stroke="var(--accent)"' : ''}/>`;
   const PL = (pts, hot) => `<polyline points="${pts}"${hot ? ' stroke="var(--accent)"' : ''}/>`;
@@ -935,7 +955,7 @@
   function mediaFrames(name) {
     const m = MEDIA_MAP[name];
     if (!m) return [];
-    if (m.photo) return m.idx.map(i => `<img src="img/${m.photo}-${i}.jpg" alt="${i === m.idx[0] ? esc(name) : ''}" decoding="async">`);
+    if (m.fig) return [`<img src="img/ficha/${m.fig}.jpg" alt="${esc(name)}" decoding="async">`];
     return SVG_FRAMES[m.svg];
   }
   function updateMedia(name) {
@@ -1155,7 +1175,7 @@
         <li>Respeite a técnica e pare se sentir dor forte, tontura ou falta de ar fora do normal.</li>
         <li>Abdominais fortalecem a região, mas a redução da gordura abdominal vem da redução geral de gordura corporal.</li>
         <li>Nas séries sem descanso indicado na ficha, o app inclui 45 s, que você pode pular.</li>
-        <li>Fotos dos exercícios: free-exercise-db (domínio público). Os desenhos de polichinelo, corrida parada, burpee e prancha com toque nos ombros foram feitos para este app.</li>
+        <li>Imagens dos exercícios: do cartaz do plano de treino semanal.</li>
         <li>Priorize a regularidade. Uma caminhada extra nos dias de descanso aumenta o gasto de energia.</li></ul></details>`;
     }
     $('#view-plans').innerHTML = h;
@@ -1323,7 +1343,12 @@
     'auth/weak-password': 'A senha precisa ter pelo menos 6 caracteres.',
     'auth/missing-password': 'Informe a senha.', 'auth/missing-email': 'Informe o e-mail.',
     'auth/network-request-failed': 'Sem internet. Tente de novo quando a conexão voltar.',
-    'auth/too-many-requests': 'Muitas tentativas. Espere um pouco e tente de novo.'
+    'auth/too-many-requests': 'Muitas tentativas. Espere um pouco e tente de novo.',
+    'auth/user-disabled': 'Esta conta foi desativada.',
+    'auth/popup-closed-by-user': 'Login com Google cancelado.', 'auth/cancelled-popup-request': 'Login com Google cancelado.',
+    'auth/unauthorized-domain': 'Este endereço não está autorizado no Firebase. Veja o passo 7 do guia.',
+    'auth/operation-not-allowed': 'Este tipo de login não está ativado no Firebase.',
+    'auth/account-exists-with-different-credential': 'Este e-mail já tem conta com outro tipo de login.'
   };
 
   function applyPrefsToInputs() {
@@ -1387,50 +1412,112 @@
       $('#resume-banner').hidden = !(S.status === 'idle' && store.get(SNAP_KEY, null));
       renderHistory(); renderPlans();
     }
-    renderAcctBtn();
+    renderAcctBtn(); updateGate();
     if ($('#acct').open) renderAcct();
   }
 
   function renderAcctBtn() {
     const b = $('#btn-acct');
-    b.hidden = !(window.TreinoCloud || Acct.user);
-    b.textContent = Acct.user ? (Acct.user.name || Acct.user.email || 'Conta').split(/[ @]/)[0] : 'Entrar';
+    b.hidden = !Acct.user;
+    b.textContent = Acct.user ? (Acct.user.name || Acct.user.email || 'Conta').split(/[ @]/)[0] : 'Conta';
   }
-  function setMsg(text, ok) {
-    const el = $('#ac-msg');
+
+  /* tela de login: o app só abre depois de entrar */
+  const Gate = { cloud: 'wait', shown: false, mode: 'in', busy: false };
+  const gateNeeded = () => !Acct.user && Gate.cloud !== 'off' && S.status === 'idle' && !P.on;
+  function updateGate() {
+    const need = gateNeeded();
+    if (need === Gate.shown) return;
+    Gate.shown = need;
+    document.body.classList.toggle('gated', need);
+    $('#gate').hidden = !need;
+    if (need) { Gate.busy = false; Gate.mode = 'in'; renderGate(); window.scrollTo(0, 0); }
+  }
+  function gMsg(text, ok) {
+    const el = $('#g-msg');
     if (!el) return;
     el.textContent = text || '';
     el.className = 'hint' + (ok ? ' ok' : '');
     el.style.color = ok ? '' : 'var(--danger)';
   }
+  function renderGate() {
+    const up = Gate.mode === 'up', dis = Gate.busy ? ' disabled' : '';
+    const status = Gate.cloud === 'fail'
+      ? 'Não foi possível conectar ao servidor de contas. Verifique a internet. <button class="linkbtn" data-g="retry">Tentar de novo</button>'
+      : (Gate.cloud === 'wait' ? 'Conectando…' : '');
+    $('#gate').innerHTML = `<div class="gate-card">
+      <h1>Treino</h1>
+      <p class="lead">Entre para salvar seus treinos e acompanhar sua evolução em qualquer aparelho.</p>
+      <button class="gbtn" data-g="google"${dis}><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17.5z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.9-6.1C.9 16.4 0 20.1 0 24s.9 7.6 2.6 10.8l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.9 2.3-8.4 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg> ${up ? 'Cadastrar com o Google' : 'Entrar com o Google'}</button>
+      ${up ? '<p class="hint" style="margin:8px 0 0">Com o Google, a conta é criada na hora, sem precisar de senha.</p>' : ''}
+      <div class="or"><span>${up ? 'ou cadastre com e-mail' : 'ou use seu e-mail'}</span></div>
+      <div class="tabs two" role="group" aria-label="Escolha">
+        <button class="tab" data-g="mode" data-v="in" aria-pressed="${!up}">Entrar</button>
+        <button class="tab" data-g="mode" data-v="up" aria-pressed="${up}">Criar conta</button></div>
+      <form id="gate-form" novalidate>
+        ${up ? '<div class="fld"><label for="g-name">Nome</label><input id="g-name" autocomplete="name"></div>' : ''}
+        <div class="fld"><label for="g-email">E-mail</label><input id="g-email" type="email" inputmode="email" autocomplete="email" autocapitalize="none"></div>
+        <div class="fld"><label for="g-pass">Senha</label><input id="g-pass" type="password" autocomplete="${up ? 'new-password' : 'current-password'}"></div>
+        ${up ? '<div class="fld"><label for="g-pass2">Repita a senha</label><input id="g-pass2" type="password" autocomplete="new-password"></div>' : ''}
+        <p id="g-msg" class="hint" role="alert" style="color: var(--danger)"></p>
+        <button class="btn" type="submit" id="g-go"${dis}>${up ? 'Criar conta' : 'Entrar'}</button>
+      </form>
+      ${up ? '<p class="hint">Use uma senha com pelo menos 6 caracteres.</p>' : '<button class="linkbtn" data-g="reset">Esqueci a senha</button>'}
+      <p class="gate-note" id="g-status" role="status">${status}</p>
+    </div>`;
+  }
+  function gateBusy(on) {
+    Gate.busy = on;
+    ['#g-go', '.gbtn'].forEach(q => { const el = document.querySelector('#gate ' + q); if (el) el.disabled = on; });
+  }
+  $('#gate').addEventListener('click', async e => {
+    const b = e.target.closest('[data-g]');
+    if (!b) return;
+    const a = b.dataset.g, C = window.TreinoCloud;
+    if (a === 'mode') { Gate.mode = b.dataset.v; renderGate(); }
+    else if (a === 'retry') location.reload();
+    else if (a === 'google') {
+      if (!C) { gMsg(Gate.cloud === 'wait' ? 'Conectando… tente de novo em instantes.' : 'Sem conexão com o servidor de contas.'); return; }
+      gateBusy(true); gMsg('Abrindo o Google…', true);
+      try { await C.google(); }
+      catch (err) { gateBusy(false); gMsg(ERR_TXT[err && err.code] || 'Não foi possível entrar com o Google. Tente de novo.'); }
+    }
+    else if (a === 'reset') {
+      const email = ($('#g-email').value || '').trim();
+      if (!email) { gMsg('Digite seu e-mail acima e toque em Esqueci a senha.'); return; }
+      if (!C) { gMsg('Sem conexão com o servidor de contas.'); return; }
+      try { await C.reset(email); gMsg('Enviamos um e-mail para redefinir a senha. Veja também a caixa de spam.', true); }
+      catch (err) { gMsg(ERR_TXT[err && err.code] || 'Não foi possível enviar o e-mail.'); }
+    }
+  });
+  $('#gate').addEventListener('submit', async e => {
+    e.preventDefault();
+    const C = window.TreinoCloud, up = Gate.mode === 'up';
+    if (!C) { gMsg(Gate.cloud === 'wait' ? 'Conectando… tente de novo em instantes.' : 'Sem conexão com o servidor de contas.'); return; }
+    const email = $('#g-email').value.trim(), pass = $('#g-pass').value;
+    const name = up ? $('#g-name').value.trim() : '';
+    if (up && !name) { gMsg('Informe seu nome.'); return; }
+    if (!email || !pass) { gMsg('Preencha e-mail e senha.'); return; }
+    if (up && pass.length < 6) { gMsg('A senha precisa ter pelo menos 6 caracteres.'); return; }
+    if (up && pass !== $('#g-pass2').value) { gMsg('As senhas não são iguais.'); return; }
+    gateBusy(true); gMsg('Aguarde…', true);
+    try { if (up) await C.signUp(name, email, pass); else await C.signIn(email, pass); }
+    catch (err) { gateBusy(false); gMsg(ERR_TXT[err && err.code] || 'Não foi possível continuar. Tente de novo.'); }
+  });
+
+  /* janela da conta (só para quem já entrou) */
   function renderAcct() {
     const box = $('#acct-body'), u = Acct.user;
-    if (u) {
-      box.innerHTML = `<h2>Sua conta</h2>
-        <p class="muted" style="margin:0">${u.name ? esc(u.name) + '<br>' : ''}${esc(u.email)}</p>
-        <p id="acct-status" role="status" style="margin:12px 0 0">${esc(SYNC_TXT[Acct.sync] || '')}</p>
-        <p class="hint">Treinos, medidas e progresso dos planos ficam salvos na conta e aparecem em qualquer aparelho.</p>
-        <div class="btn-row"><button class="btn small" data-a="sync">Sincronizar agora</button>
-        <button class="btn small secondary" data-a="out">Sair da conta</button></div>
-        <button class="btn small secondary" data-a="close">Fechar</button>`;
-      return;
-    }
-    const up = Acct.mode === 'up';
-    box.innerHTML = `<h2>${up ? 'Criar conta' : 'Entrar'}</h2>
-      <div class="tabs two" role="group" aria-label="Escolha">
-        <button class="tab" data-a="mode" data-v="in" aria-pressed="${!up}">Entrar</button>
-        <button class="tab" data-a="mode" data-v="up" aria-pressed="${up}">Criar conta</button></div>
-      <form id="acct-form" novalidate>
-        ${up ? '<div class="fld"><label for="ac-name">Nome</label><input id="ac-name" autocomplete="name"></div>' : ''}
-        <div class="fld"><label for="ac-email">E-mail</label><input id="ac-email" type="email" inputmode="email" autocomplete="email" autocapitalize="none"></div>
-        <div class="fld"><label for="ac-pass">Senha</label><input id="ac-pass" type="password" autocomplete="${up ? 'new-password' : 'current-password'}"></div>
-        <p id="ac-msg" class="hint" role="alert" style="color: var(--danger)"></p>
-        <button class="btn" type="submit" id="ac-go">${up ? 'Criar conta' : 'Entrar'}</button>
-      </form>
-      ${up ? '' : '<button class="linkbtn" data-a="reset">Esqueci a senha</button>'}
-      <button class="btn small secondary" data-a="close">Agora não</button>`;
+    if (!u) { box.innerHTML = ''; return; }
+    box.innerHTML = `<h2>Sua conta</h2>
+      <p class="muted" style="margin:0">${u.name ? esc(u.name) + '<br>' : ''}${esc(u.email)}</p>
+      <p id="acct-status" role="status" style="margin:12px 0 0">${esc(SYNC_TXT[Acct.sync] || '')}</p>
+      <p class="hint">Treinos, medidas e progresso dos planos ficam salvos na conta e aparecem em qualquer aparelho.</p>
+      <div class="btn-row"><button class="btn small" data-a="sync">Sincronizar agora</button>
+      <button class="btn small secondary" data-a="out">Sair da conta</button></div>
+      <button class="btn small secondary" data-a="close">Fechar</button>`;
   }
-  function openAcct() { renderAcct(); $('#acct').showModal(); }
+  function openAcct() { if (!Acct.user) return; renderAcct(); $('#acct').showModal(); }
 
   $('#btn-acct').addEventListener('click', openAcct);
   $('#acct').addEventListener('click', async e => {
@@ -1438,35 +1525,11 @@
     if (!b) return;
     const a = b.dataset.a, C = window.TreinoCloud;
     if (a === 'close') $('#acct').close();
-    else if (a === 'mode') { Acct.mode = b.dataset.v; renderAcct(); }
     else if (a === 'sync') { C && C.sync(); }
     else if (a === 'out') {
       if (S.status !== 'idle' || P.on) { alert('Finalize o treino atual antes de sair da conta.'); return; }
+      $('#acct').close();
       try { C ? await C.signOut() : setUser(null); } catch {}
-      $('#acct').close();
-    }
-    else if (a === 'reset') {
-      const email = ($('#ac-email').value || '').trim();
-      if (!email) { setMsg('Digite seu e-mail e toque em Esqueci a senha.'); return; }
-      try { await C.reset(email); setMsg('Enviamos um e-mail para redefinir a senha.', true); }
-      catch (err) { setMsg(ERR_TXT[err && err.code] || 'Não foi possível enviar o e-mail.'); }
-    }
-  });
-  $('#acct').addEventListener('submit', async e => {
-    e.preventDefault();
-    const C = window.TreinoCloud;
-    if (!C) { setMsg('Contas indisponíveis agora. Verifique sua conexão.'); return; }
-    if (S.status !== 'idle' || P.on) { setMsg('Finalize o treino atual antes de trocar de conta.'); return; }
-    const email = $('#ac-email').value.trim(), pass = $('#ac-pass').value;
-    const name = Acct.mode === 'up' ? $('#ac-name').value.trim() : '';
-    if (!email || !pass) { setMsg('Preencha e-mail e senha.'); return; }
-    $('#ac-go').disabled = true; setMsg('Aguarde…', true);
-    try {
-      if (Acct.mode === 'up') await C.signUp(name, email, pass); else await C.signIn(email, pass);
-      $('#acct').close();
-    } catch (err) {
-      setMsg(ERR_TXT[err && err.code] || 'Não foi possível continuar. Tente de novo.');
-      const g = $('#ac-go'); if (g) g.disabled = false;
     }
   });
   window.addEventListener('treino:sync', e => {
@@ -1474,7 +1537,9 @@
     const el = $('#acct-status');
     if (el) el.textContent = SYNC_TXT[Acct.sync] || '';
   });
-  window.addEventListener('treino:cloud-ready', renderAcctBtn);
+  window.addEventListener('treino:cloud-ready', () => { Gate.cloud = 'ready'; if (Gate.shown) renderGate(); updateGate(); });
+  window.addEventListener('treino:cloud-off', () => { Gate.cloud = 'off'; updateGate(); });
+  window.addEventListener('treino:cloud-fail', () => { if (Gate.cloud === 'wait') { Gate.cloud = 'fail'; if (Gate.shown) renderGate(); } });
   $('#weight').addEventListener('change', () => {
     const w = parseFloat(String($('#weight').value).replace(',', '.'));
     if (w >= 30 && w <= 250) { prefs.weight = w; savePrefs(); }
@@ -1491,6 +1556,8 @@
   renderHistory();
   renderPlans();
   renderAcctBtn();
+  updateGate();
+  setTimeout(() => { if (Gate.cloud === 'wait') { Gate.cloud = 'fail'; if (Gate.shown) renderGate(); } }, 8000);
   setInterval(tick, 250);
 
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
