@@ -105,6 +105,18 @@ const CDN = `https://www.gstatic.com/firebasejs/${V}/`;
         throw e;
       }
     },
+    async deleteAccount() {
+      const u = auth.currentUser;
+      if (!u) throw Object.assign(new Error('sem usuário'), { code: 'auth/no-user' });
+      const tr = await u.getIdTokenResult();                         // o Firebase exige login recente para excluir a conta
+      if (Date.now() - new Date(tr.authTime).getTime() > 4 * 60 * 1000) throw Object.assign(new Error('login antigo'), { code: 'auth/requires-recent-login' });
+      const snap = await FS.getDocs(FS.collection(db, 'users', u.uid, 'workouts'));
+      let batch = FS.writeBatch(db), n = 0;
+      for (const d of snap.docs) { batch.delete(d.ref); if (++n % 400 === 0) { await batch.commit(); batch = FS.writeBatch(db); } }
+      await batch.commit();
+      await FS.deleteDoc(FS.doc(db, 'users', u.uid));
+      await AU.deleteUser(u);
+    },
     reset(email) { return AU.sendPasswordResetEmail(auth, email); },
     signOut() { return AU.signOut(auth); }
   };

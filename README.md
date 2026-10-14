@@ -30,6 +30,15 @@ Onde a ficha não indica descanso entre séries, o app usa 45 s (dá para pular)
 - Na academia, o app mostra a imagem do exercício e a carga da última vez.
 - Na corrida, ritmo ao vivo e ritmo alvo opcional com aviso de voz/bipe. O histórico mostra o trajeto sobre o mapa (OpenStreetMap).
 
+## Novidades
+
+- Visual novo: navegação inferior, anel do km na corrida, fontes e cores próprias (arquivos em `fonts/`).
+- Academia: carga e repetições por série, recorde de carga, descanso com mais 15 s e menos 15 s e aviso aos 10 s, aquecimento e alongamento guiados, treinos extras (E a L) e duplicar treino.
+- Corrida: meta do treino (km ou tempo), pausa automática, ritmo alvo e plano que sugere repetir a semana após uma pausa longa.
+- Progresso: resumo da semana, calorias, recordes, conquistas, fotos de evolução (só no aparelho), backup e restauração.
+- Compartilhar o treino como imagem, apresentação na primeira abertura e página `privacidade.html`.
+- Em Conta: Excluir minha conta e dados (apaga a nuvem e a conta).
+
 ## Contas e nuvem (opcional)
 
 O app aceita vários usuários, cada um com login (e-mail e senha) e dados próprios na nuvem, via Firebase.
