@@ -39,7 +39,23 @@ const CDN = `https://www.gstatic.com/firebasejs/${V}/`;
     return { ...rest, route };
   };
 
-  let syncing = false, again = false, timer = null;
+  let syncing = false, again = false, timer = null, lastProf = 0;
+
+  // Resumo do usuário para o painel do administrador (sem trajetos, cargas, peso ou fotos).
+  async function writeProfile(u, merged) {
+    if (Date.now() - lastProf < 10 * 60 * 1000) return;
+    lastProf = Date.now();
+    try {
+      const h = merged.history || [];
+      await FS.setDoc(FS.doc(db, 'profiles', u.uid), clean({
+        name: u.displayName || '', email: u.email || '',
+        createdAt: u.metadata && u.metadata.creationTime ? new Date(u.metadata.creationTime).toISOString() : null,
+        lastSeen: new Date().toISOString(), workouts: h.length,
+        km: Math.round(h.reduce((a, x) => a + (x.dist || 0), 0) / 10) / 100,
+        lastWorkout: h.length ? h.reduce((m, x) => (x.date > m ? x.date : m), '') : null
+      }), { merge: true });
+    } catch { lastProf = 0; }                                         // regras ainda não publicadas: o app segue normal
+  }
 
   async function sync() {
     const u = auth.currentUser;
@@ -75,6 +91,7 @@ const CDN = `https://www.gstatic.com/firebasejs/${V}/`;
         done: merged.done, evo: merged.evo, deleted: merged.deleted,
         settings: merged.settings, settingsT: merged.settingsT || 0, gym: merged.gym || {}
       }), { merge: true });
+      await writeProfile(u, merged);
       emit('ok');
     } catch (e) {
       console.warn('Sincronização falhou', e);
@@ -115,7 +132,16 @@ const CDN = `https://www.gstatic.com/firebasejs/${V}/`;
       for (const d of snap.docs) { batch.delete(d.ref); if (++n % 400 === 0) { await batch.commit(); batch = FS.writeBatch(db); } }
       await batch.commit();
       await FS.deleteDoc(FS.doc(db, 'users', u.uid));
+      try { await FS.deleteDoc(FS.doc(db, 'profiles', u.uid)); } catch {}
       await AU.deleteUser(u);
+    },
+    async isAdmin() {
+      const u = auth.currentUser; if (!u) return false;
+      try { return (await FS.getDoc(FS.doc(db, 'admins', u.uid))).exists(); } catch { return false; }
+    },
+    async adminList() {
+      const s = await FS.getDocs(FS.collection(db, 'profiles'));
+      return s.docs.map(d => ({ uid: d.id, ...d.data() }));
     },
     reset(email) { return AU.sendPasswordResetEmail(auth, email); },
     signOut() { return AU.signOut(auth); }

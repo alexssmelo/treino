@@ -38,6 +38,7 @@ Onde a ficha não indica descanso entre séries, o app usa 45 s (dá para pular)
 - Progresso: resumo da semana, calorias, recordes, conquistas, fotos de evolução (só no aparelho), backup e restauração.
 - Compartilhar o treino como imagem, apresentação na primeira abertura e página `privacidade.html`.
 - Em Conta: Excluir minha conta e dados (apaga a nuvem e a conta).
+- Painel do administrador (Conta > Painel do administrador): lista de usuários, ativos e novos. Veja `SETUP-NUVEM.md`.
 
 ## Contas e nuvem (opcional)
 

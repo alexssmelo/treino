@@ -41,3 +41,14 @@ O app tem o botão **Continuar com o Google** na tela de login. Para funcionar:
 1. No Firebase, **Authentication > Método de login** deve ter **Google** ativado (já está no seu projeto).
 2. **Authentication > Configurações > Domínios autorizados** deve ter `alexssmelo.github.io`.
 Cada pessoa precisa entrar (ou criar conta) para abrir o app.
+
+## Painel do administrador (ver quem usa o app)
+
+1. No Firebase, abra **Firestore Database > Regras**, apague o texto atual, cole o conteúdo do arquivo `firestore.rules` e toque em **Publicar**.
+2. Abra o app e entre com a sua conta uma vez (isso cria o seu resumo).
+3. No Firebase, vá em **Authentication > Usuários** e copie o **UID do usuário** da sua conta.
+4. Em **Firestore Database > Dados**, toque em **Iniciar coleção**. Nome da coleção: `admins`. ID do documento: cole o seu UID. Campo: `ativo`, tipo booleano, valor `true`. Salve.
+5. Abra o app, feche e abra de novo. Em **Conta** aparece o botão **Painel do administrador**.
+
+O painel mostra nome, e-mail, cadastro, último acesso, treinos e km de cada pessoa. Cada pessoa aparece depois de abrir o app atualizado com internet.
+Para dar acesso a outra pessoa, crie outro documento em `admins` com o UID dela.

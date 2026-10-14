@@ -1,12 +1,30 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
     // Cada pessoa lê e grava somente os próprios dados.
     match /users/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
       match /{document=**} {
         allow read, write: if request.auth != null && request.auth.uid == uid;
       }
+    }
+
+    // Resumo de cada usuário (nome, e-mail, último acesso e totais).
+    // Cada pessoa grava o seu; só quem está em "admins" lê todos.
+    match /profiles/{uid} {
+      allow create, update, delete: if request.auth != null && request.auth.uid == uid;
+      allow read: if request.auth != null && (request.auth.uid == uid || isAdmin());
+    }
+
+    // Lista de administradores: criada só pelo console do Firebase.
+    match /admins/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
     }
   }
 }

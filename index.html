@@ -384,6 +384,10 @@
   .sw[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--ink); }
   .sw.custom { background: conic-gradient(#e33, #fc3, #3c6, #39f, #93f, #e33); overflow: hidden; }
   .sw.custom input { position: absolute; inset: -8px; width: 60px; height: 60px; opacity: 0; cursor: pointer; }
+  .adm-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .adm-list li { background: var(--bg); border-radius: 14px; padding: 10px 12px; display: grid; gap: 2px; font-size: 15px; }
+  .adm-list li b:first-child { font-size: 17px; }
+  #adm-q { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--bg); color: var(--ink); font-size: 17px; }
   .prbox { background: color-mix(in srgb, var(--heat) 14%, var(--surface)); border-radius: 14px; padding: 10px 14px; margin: 12px 0 0; }
   .pips-row { display: flex; justify-content: center; gap: 8px; margin: 10px 0 0; min-height: 12px; }
   .pips-row i { width: 28px; height: 8px; border-radius: 99px; background: var(--line); }
@@ -564,6 +568,7 @@
 </div></nav>
 <dialog id="acct" aria-label="Conta"><div id="acct-body"></div></dialog>
 
+<dialog id="adm" aria-label="Painel do administrador"><div id="adm-body"></div></dialog>
 <dialog id="intro" aria-label="Apresentação"><div id="intro-body"></div></dialog>
 <dialog id="phdlg" aria-label="Foto de evolução"><div id="ph-view"></div></dialog>
 <dialog id="sum" aria-label="Resumo da semana"><div id="sum-body"></div><button class="btn small" id="sum-close" style="margin-top:16px">Fechar</button></dialog>
@@ -2357,7 +2362,7 @@
 
 
   /* ---------- conta e nuvem ---------- */
-  const Acct = { user: LAST && LAST.uid ? LAST : null, mode: 'in', sync: '' };
+  const Acct = { user: LAST && LAST.uid ? LAST : null, mode: 'in', sync: '', admin: false };
   const SYNC_TXT = {
     syncing: 'Sincronizando…', ok: 'Dados sincronizados.',
     offline: 'Sem internet. Sincroniza quando a conexão voltar.', error: 'Não foi possível sincronizar. Tente de novo.'
@@ -2439,6 +2444,8 @@
     const next = u ? u.uid : '';
     Acct.user = u ? { uid: u.uid, name: u.name || '', email: u.email || '' } : null;
     try { u ? localStorage.setItem('treino.lastUser', JSON.stringify(Acct.user)) : localStorage.removeItem('treino.lastUser'); } catch {}
+    Acct.admin = false;
+    if (u && window.TreinoCloud && window.TreinoCloud.isAdmin) window.TreinoCloud.isAdmin().then(v => { Acct.admin = v; if ($('#acct').open) renderAcct(); });
     if (u) setTimeout(maybeIntro, 1200);
     if (next !== ns) {
       ns = next;
@@ -2460,6 +2467,54 @@
     b.textContent = nm.trim().charAt(0).toUpperCase();
     b.setAttribute('aria-label', 'Conta de ' + nm);
   }
+
+  /* ---------- painel do administrador ---------- */
+  const ADM = { list: [], q: '' };
+  const agoTxt = iso => {
+    if (!iso) return 'nunca';
+    const m = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+    if (m < 2) return 'agora';
+    if (m < 60) return `há ${m} min`;
+    if (m < 1440) return `há ${Math.round(m / 60)} h`;
+    const d = Math.round(m / 1440); return d === 1 ? 'ontem' : `há ${d} dias`;
+  };
+  const dBR = iso => iso ? new Date(iso).toLocaleDateString('pt-BR') : '-';
+  function renderAdmin() {
+    const L = ADM.list.slice().sort((a, b) => String(b.lastSeen || '').localeCompare(String(a.lastSeen || '')));
+    const wk = Date.now() - 7 * 864e5, t = x => x ? new Date(x).getTime() : 0;
+    const q = ADM.q.trim().toLowerCase();
+    const vis = L.filter(u => !q || (u.name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q));
+    $('#adm-body').innerHTML = `<h2>Administrador</h2>
+      <div class="kpis" style="margin:8px 0 14px"><div><div class="v">${L.length}</div><div class="l">usuários</div></div>
+      <div><div class="v">${L.filter(u => t(u.lastSeen) > wk).length}</div><div class="l">ativos em 7 dias</div></div>
+      <div><div class="v">${L.filter(u => t(u.createdAt) > wk).length}</div><div class="l">novos em 7 dias</div></div></div>
+      <p class="muted" style="margin:0 0 10px">${nf(L.reduce((a, u) => a + (u.workouts || 0), 0), 0)} treinos e ${nf(L.reduce((a, u) => a + (u.km || 0), 0), 1)} km no total.</p>
+      <div class="fld" style="margin:0 0 10px"><input id="adm-q" type="search" placeholder="Buscar por nome ou e-mail" value="${esc(ADM.q)}" aria-label="Buscar usuário"></div>
+      <ul class="adm-list">${vis.map(u => `<li><b>${esc(u.name || (u.email || '').split('@')[0] || 'Sem nome')}</b><span class="muted">${esc(u.email || '')}</span>
+        <span>Último acesso: <b>${esc(agoTxt(u.lastSeen))}</b>. Cadastro: ${esc(dBR(u.createdAt))}.</span>
+        <span>${u.workouts || 0} ${u.workouts === 1 ? 'treino' : 'treinos'}, ${nf(u.km || 0, 1)} km${u.lastWorkout ? '. Último treino: ' + esc(dBR(u.lastWorkout)) : ''}.</span></li>`).join('') || '<li class="muted">Nenhum usuário encontrado.</li>'}</ul>
+      <p class="hint">Os números atualizam quando cada pessoa abre o app com internet.</p>
+      <div class="btn-row" style="margin-top:12px"><button class="btn small" id="adm-refresh" type="button">Atualizar</button><button class="btn small secondary" id="adm-csv" type="button">Baixar lista (CSV)</button></div>
+      <button class="btn small secondary" id="adm-close" type="button" style="margin-top:10px">Fechar</button>`;
+  }
+  async function openAdmin() {
+    const C = window.TreinoCloud; if (!C || !C.adminList) return;
+    $('#adm-body').innerHTML = '<h2>Administrador</h2><p class="muted">Carregando…</p>';
+    if (!$('#adm').open) $('#adm').showModal();
+    try { ADM.list = await C.adminList(); renderAdmin(); }
+    catch { $('#adm-body').innerHTML = '<h2>Administrador</h2><p>Sem permissão para ver os usuários. Confira se as regras do Firestore foram publicadas e se o seu usuário está na coleção admins.</p><button class="btn small secondary" id="adm-close" type="button">Fechar</button>'; }
+  }
+  $('#adm').addEventListener('click', e => {
+    if (e.target.id === 'adm-close') $('#adm').close();
+    else if (e.target.id === 'adm-refresh') openAdmin();
+    else if (e.target.id === 'adm-csv') {
+      const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+      const rows = [['Nome', 'E-mail', 'Cadastro', 'Último acesso', 'Treinos', 'Km', 'Último treino']];
+      ADM.list.forEach(u => rows.push([u.name, u.email, dBR(u.createdAt), u.lastSeen ? new Date(u.lastSeen).toLocaleString('pt-BR') : '', u.workouts || 0, nf(u.km || 0, 2), dBR(u.lastWorkout)]));
+      download('﻿' + rows.map(r => r.map(q).join(';')).join('\r\n'), 'treino-usuarios.csv', 'text/csv;charset=utf-8');
+    }
+  });
+  $('#adm').addEventListener('input', e => { if (e.target.id === 'adm-q') { ADM.q = e.target.value; const pos = e.target.selectionStart; renderAdmin(); const i = $('#adm-q'); i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } });
 
   /* tela de login: o app só abre depois de entrar */
   const Gate = { cloud: 'wait', shown: false, mode: 'in', busy: false };
@@ -2556,7 +2611,9 @@
       <div class="btn-row"><button class="btn small" data-a="sync">Sincronizar agora</button>
       <button class="btn small secondary" data-a="out">Sair da conta</button></div>
       <button class="btn small secondary" data-a="close">Fechar</button>
+      ${Acct.admin ? '<button class="btn small" data-a="admin" style="margin-top:10px">Painel do administrador</button>' : ''}
       <button class="btn small danger" data-a="del" style="margin-top:10px">Excluir minha conta e dados</button>
+      <p class="hint">O administrador do app vê seu nome, e-mail, último acesso e os totais de treinos e km. Trajetos, cargas, peso e fotos ficam só com você.</p>
       <p class="hint"><a href="privacidade.html" target="_blank" rel="noopener">Privacidade e termos de uso</a></p>`;
   }
   function openAcct() { if (!Acct.user) return; renderAcct(); $('#acct').showModal(); }
@@ -2568,6 +2625,7 @@
     const a = b.dataset.a, C = window.TreinoCloud;
     if (a === 'close') $('#acct').close();
     else if (a === 'sync') { C && C.sync(); }
+    else if (a === 'admin') { $('#acct').close(); openAdmin(); }
     else if (a === 'del') {
       if (S.status !== 'idle' || P.on) { alert('Finalize o treino atual antes de excluir a conta.'); return; }
       if (!C || !confirm('Excluir sua conta e TODOS os seus dados da nuvem? Isso não pode ser desfeito.')) return;
