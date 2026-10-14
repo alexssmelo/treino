@@ -253,6 +253,43 @@
   .gate-card form .btn { margin-top: 16px; }
   .gate-note { color: var(--muted); font-size: 14px; text-align: center; margin: 16px 0 0; }
 
+
+  /* tema escolhido pelo usuário */
+  :root[data-theme="light"] { --bg:#EDF2F5; --surface:#FFFFFF; --ink:#0B2545; --muted:#5A6B7C; --line:#CBD6DF; --accent:#1D4ED8; --accent-ink:#FFFFFF; --heat:#C2410C; --danger:#B42318; }
+  :root[data-theme="light"] .badge { color:#166534; background:#DCFCE7; }
+  :root[data-theme="light"] .ok { color:#166534; }
+  :root[data-theme="dark"] { --bg:#0A1626; --surface:#122238; --ink:#E8F0F8; --muted:#8CA0B5; --line:#223650; --accent:#5B8DEF; --accent-ink:#06142A; --heat:#FF8A4C; --danger:#FF8A80; }
+  :root[data-theme="dark"] .badge { color:#86EFAC; background:#14532D; }
+  :root[data-theme="dark"] .ok { color:#86EFAC; }
+  /* progresso */
+  .tabs.four { grid-template-columns: repeat(4, 1fr); }
+  .tabs.four .tab { padding: 10px 2px; font-size: 14px; }
+  .prog h2 { font-size: 17px; margin: 0 0 8px; font-weight: 600; }
+  .goalbar { height: 10px; background: var(--line); border-radius: 999px; overflow: hidden; margin: 8px 0 6px; }
+  .goalbar > i { display: block; height: 100%; background: var(--accent); border-radius: 999px; }
+  .kpis { display: grid; grid-template-columns: repeat(3, 1fr); text-align: center; margin-top: 12px; }
+  .kpis .v { font-family: var(--display); font-weight: 700; font-size: 36px; line-height: 1; }
+  .kpis .l { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .chart { width: 100%; height: auto; display: block; }
+  .chart text { font-family: var(--body); font-size: 11px; fill: var(--muted); }
+  .chart .val { fill: var(--ink); font-weight: 600; }
+  .ax { stroke: var(--line); stroke-width: 1; }
+  .prog select, .prog input[type=time], .prog input[type=text] { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--bg); color: var(--ink); font-size: 16px; }
+  .daychips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+  .daychips label { cursor: pointer; }
+  .daychips input { position: absolute; opacity: 0; }
+  .daychips span { display: inline-block; padding: 8px 11px; border-radius: 999px; border: 1.5px solid var(--line); font-weight: 600; font-size: 14px; }
+  .daychips input:checked + span { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .daychips input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 3px; margin-top: 6px; }
+  .seg button { border: 0; background: transparent; padding: 9px 4px; border-radius: 9px; font-weight: 600; color: var(--muted); cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+  .lastkg { text-align: center; font-size: 14px; color: var(--muted); margin: -4px 0 12px; }
+  .curpace { text-align: center; color: var(--muted); font-size: 15px; margin-top: 10px; }
+  .curpace b { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .route .tile { opacity: .92; }
+  .attr { font-size: 10px; color: var(--muted); text-align: right; margin: 2px 0 0; }
+
   @media (prefers-reduced-motion: no-preference) {
     .fill { transition: width .4s linear; }
   }
@@ -263,10 +300,11 @@
 <div class="app">
   <header class="top">
     <div class="top-row"><h1>Treino</h1><button class="acct-btn" id="btn-acct" hidden>Conta</button></div>
-    <div class="tabs" role="tablist" aria-label="Seções">
+    <div class="tabs four" role="tablist" aria-label="Seções">
       <button class="tab" role="tab" id="tab-train" aria-selected="true" aria-controls="view-train">Treino</button>
       <button class="tab" role="tab" id="tab-plans" aria-selected="false" aria-controls="view-plans">Planos</button>
       <button class="tab" role="tab" id="tab-hist" aria-selected="false" aria-controls="view-hist">Histórico</button>
+      <button class="tab" role="tab" id="tab-prog" aria-selected="false" aria-controls="view-prog">Progresso</button>
     </div>
   </header>
 
@@ -297,6 +335,11 @@
           <span>kg</span>
         </div>
         <p class="hint">O peso é usado para estimar as calorias. Fica salvo na sua conta.</p>
+      </div>
+      <div class="panel" style="margin-top:14px">
+        <label class="field-label" for="pace-goal">Ritmo alvo (opcional)</label>
+        <input id="pace-goal" type="text" inputmode="text" placeholder="Ex.: 6:00 min/km" style="width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);font-size:17px">
+        <p class="hint">Em corrida ou caminhada livre (sem plano), o app avisa se você estiver bem mais rápido ou mais lento. Deixe em branco para desligar.</p>
       </div>
       <div class="panel" style="margin-top:14px">
         <label class="field-label" for="snd">Avisos nos treinos</label>
@@ -336,6 +379,7 @@
           <div class="metric"><div class="v" id="m-pace">--:--</div><div class="l" id="m-pace-l">min/km</div></div>
           <div class="metric heat"><div class="v" id="m-kcal">0</div><div class="l">kcal</div></div>
         </div>
+        <div class="curpace" id="m-cur" hidden></div>
       </div>
 
       <div class="controls btn-row">
@@ -359,6 +403,7 @@
         <div class="state-label" id="pl-sub"></div>
       </div>
       <div class="fld" id="pl-kgwrap" hidden style="max-width:220px;margin:0 auto 12px;text-align:center"><label for="pl-kg">Carga (kg)</label><input id="pl-kg" inputmode="decimal" placeholder="0" style="text-align:center"></div>
+      <div class="lastkg" id="pl-last" hidden></div>
       <div class="kmbar"><div class="track"><div class="fill" id="pl-fill"></div></div></div>
       <div class="pl-next" id="pl-next"></div>
       <div class="btn-row">
@@ -371,6 +416,9 @@
 
   <!-- PLANOS -->
   <section id="view-plans" role="tabpanel" aria-labelledby="tab-plans" hidden></section>
+
+  <!-- PROGRESSO -->
+  <section id="view-prog" class="prog" role="tabpanel" aria-labelledby="tab-prog" hidden></section>
 
   <!-- HISTÓRICO -->
   <section id="view-hist" role="tabpanel" aria-labelledby="tab-hist" hidden>
@@ -461,9 +509,16 @@
   /* ---------- preferências ---------- */
   const SNAP_KEY = 'snapshot', HIST_KEY = 'history', SET_KEY = 'settings',
         DONE_KEY = 'done', EVO_KEY = 'evo', DEL_KEY = 'deleted', GYM_KEY = 'gym';
-  const loadPrefs = () => Object.assign({ weight: 70, act: 'run', voice: true, mode: 'all', vol: 50 }, store.get(SET_KEY, {}));
+  const loadPrefs = () => Object.assign({ weight: 70, act: 'run', voice: true, mode: 'all', vol: 50, theme: 'auto', zoom: 1, goal: 3, pace: 0, remind: { days: [1, 3, 5], time: '18:00' } }, store.get(SET_KEY, {}));
   let prefs = loadPrefs();
   function savePrefs() { prefs.t = Date.now(); store.set(SET_KEY, prefs); changed(); }
+  function applyLook() {
+    const r = document.documentElement;
+    if (prefs.theme === 'light' || prefs.theme === 'dark') r.dataset.theme = prefs.theme; else delete r.dataset.theme;
+    r.style.zoom = prefs.zoom > 1 ? String(prefs.zoom) : '';
+  }
+  applyLook();
+  const parsePace = t => { const m = String(t).trim().match(/^(\d{1,2})(?::(\d{2}))?$/); if (!m) return 0; const sec = +m[1] * 60 + (m[2] ? +m[2] : 0); return sec >= 120 && sec <= 1200 ? sec : 0; };
 
   /* ---------- avisos: som, vibração e voz ---------- */
   let audioCtx = null;
@@ -667,10 +722,25 @@
     if (!('geolocation' in navigator)) { setGps('Este aparelho não oferece GPS ao navegador.', 'bad'); return; }
     if (S.watch !== null) return;
     setGps('Buscando sinal de GPS…');
+    const BG = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BackgroundGeolocation;
+    if (BG) {   // app instalado: GPS segue com a tela apagada
+      S.watch = 'bg'; S.bg = true;
+      BG.addWatcher({ backgroundTitle: 'Treino em andamento', backgroundMessage: 'Registrando seu percurso', requestPermissions: true, stale: false, distanceFilter: 3 },
+        (loc, err) => {
+          if (err) { setGps(err.code === 'NOT_AUTHORIZED' ? 'Permissão de localização negada. Libere nas configurações do aparelho.' : 'Ainda sem sinal de GPS…', 'bad'); return; }
+          if (loc) onPos({ coords: { latitude: loc.latitude, longitude: loc.longitude, accuracy: loc.accuracy || 10 }, timestamp: loc.time || Date.now() });
+        }).then(id => { S.bgId = id; if (S.watch === null) { BG.removeWatcher({ id }); } }).catch(() => { S.watch = null; S.bg = false; });
+      return;
+    }
     S.watch = navigator.geolocation.watchPosition(onPos, onGpsError, { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 });
   }
   function stopWatch() {
-    if (S.watch !== null) { navigator.geolocation.clearWatch(S.watch); S.watch = null; }
+    if (S.watch === null) return;
+    if (S.bg) {
+      try { const BG = window.Capacitor.Plugins.BackgroundGeolocation; if (S.bgId) BG.removeWatcher({ id: S.bgId }); } catch {}
+      S.bg = false; S.bgId = null; S.watch = null; return;
+    }
+    navigator.geolocation.clearWatch(S.watch); S.watch = null;
   }
   function onGpsError(e) {
     if (e.code === 1) setGps('Permissão de localização negada. Libere nas configurações do navegador.', 'bad');
@@ -789,6 +859,11 @@
       S.kcal += metFor(S.act, S.kmh) * S.weight * dtH;
       S.lastCalc = now;
       guideTick(elapsed());
+      if (prefs.pace > 0 && !S.guide && ACT[S.act].unit === 'pace' && S.kmh > 2.5 && S.dist >= 150 && now - (S.paceAt || 0) > 45000) {
+        const cur = 3600 / S.kmh;
+        if (cur > prefs.pace * 1.12) { S.paceAt = now; cue('Acelere um pouco', 988); }
+        else if (cur < prefs.pace * 0.88) { S.paceAt = now; cue('Diminua um pouco', 660); }
+      }
       if (++S.ticks % 20 === 0) saveSnapshot();
     }
     render();
@@ -813,6 +888,11 @@
     }
 
     const inKm = S.dist % 1000;
+    const cp = $('#m-cur');
+    if (S.status === 'running' && S.kmh > 1) {
+      cp.hidden = false;
+      cp.innerHTML = ACT[S.act].unit === 'speed' ? `Velocidade agora: <b>${nf(S.kmh, 1)}</b> km/h` : `Ritmo agora: <b>${fmtPace(3600 / S.kmh)}</b> min/km`;
+    } else cp.hidden = true;
     $('#km-title').textContent = 'Km ' + (Math.floor(S.dist / 1000) + 1);
     $('#km-meters').textContent = `${nf(Math.floor(inKm))} m de 1.000 m`;
     $('#km-fill').style.width = (inKm / 10) + '%';
@@ -861,7 +941,7 @@
     savePrefs();
 
     Object.assign(S, {
-      act, weight: w, acc: 0, dist: 0, kcal: 0, points: [], splits: [], lastSplitMs: 0, last: null, recent: [], kmh: 0, ticks: 0,
+      act, weight: w, acc: 0, dist: 0, kcal: 0, points: [], splits: [], lastSplitMs: 0, last: null, recent: [], kmh: 0, ticks: 0, paceAt: 0,
       guide: opts.steps ? { steps: opts.steps, idx: 0, stepStartMs: 0, stepStartDist: 0, finished: false, endText: opts.endText || '' } : null,
       plan: opts.plan || null
     });
@@ -983,18 +1063,21 @@
     ]
   };
   SVG_FRAMES.burpee.push(SVG_FRAMES.burpee[1]);
-  function mediaFrames(name) {
+  let GYM_IMG_C = null;
+  const gymImgName = ex => { if (!GYM_IMG_C) { GYM_IMG_C = {}; Object.values(gymDefault()).forEach(w => w.ex.forEach(e => { GYM_IMG_C[e.id] = e.n; })); } return GYM_IMG_C[ex]; };
+  function mediaFrames(name, ex) {
+    if (ex && gymImgName(ex) === name) return [0, 1].map(i => `<img src="img/gym/${ex}-${i}.jpg" alt="${esc(name)}" decoding="async">`);
     const m = MEDIA_MAP[name];
     if (!m) return [];
     if (m.fig) return [`<img src="img/ficha/${m.fig}.jpg" alt="${esc(name)}" decoding="async">`];
     return SVG_FRAMES[m.svg];
   }
-  function updateMedia(name) {
+  function updateMedia(name, ex) {
     const box = $('#pl-media');
-    const frames = mediaFrames(name);
+    const frames = mediaFrames(name, ex);
     box.hidden = frames.length === 0;
-    if (P.mediaKey !== name) {
-      P.mediaKey = name;
+    if (P.mediaKey !== name + '|' + (ex || '')) {
+      P.mediaKey = name + '|' + (ex || '');
       box.innerHTML = frames.map(f => `<div class="f">${f}</div>`).join('');
     }
     const els = box.children;
@@ -1053,6 +1136,14 @@
   function gymSave(g, L) { g[L].t = Date.now(); store.set(GYM_KEY, g); changed(); }
   const repsTxt = r => /^\d/.test(String(r)) ? `${r} repetições` : String(r);
   const clampInt = (v, lo, hi, d) => { const n = parseInt(String(v).replace(/\D/g, ''), 10); return isFinite(n) ? Math.min(hi, Math.max(lo, n)) : d; };
+  function lastGym(name) {
+    for (const h of store.get(HIST_KEY, [])) {
+      if (h.act !== 'gym' || !h.gym) continue;
+      const e = h.gym.find(x => x.n === name);
+      if (e) return { kg: e.kg, sets: e.sets, r: e.r, date: h.date };
+    }
+    return null;
+  }
   const gymKg = id => { const w = gymGet()[P.gym]; const e = w && w.ex.find(x => x.id === id); return e ? (e.kg || '') : ''; };
 
   function startGym(L) {
@@ -1134,10 +1225,19 @@
     }
     const nx = P.steps.slice(P.i + 1).find(x => x.k === 'work') || P.steps[P.i + 1];
     $('#pl-next').textContent = nx ? `Depois: ${nx.name}${nx.k === 'work' ? (nx.sec ? `, ${nx.sec} s` : `, ${nx.reps}`) : ''}` : 'Último passo';
-    updateMedia(isRest ? (nx && nx.k === 'work' ? nx.name : '') : st.name);
+    const ms = isRest ? (nx && nx.k === 'work' ? nx : null) : st;
+    updateMedia(ms ? ms.name : '', ms ? ms.ex : '');
     const showKg = P.kind === 'gym' && !isRest;
     $('#pl-kgwrap').hidden = !showKg;
     if (showKg && P.kgI !== P.i) { P.kgI = P.i; $('#pl-kg').value = gymKg(st.ex); }
+    const lastEl = $('#pl-last');
+    const lg = showKg ? lastGym(st.name) : null;
+    lastEl.hidden = !lg;
+    if (lg) {
+      const kgN = parseFloat(String(lg.kg).replace(',', '.'));
+      const d = new Date(lg.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+      lastEl.textContent = lg.kg ? `Última vez (${d}): ${lg.kg} kg, ${lg.sets}x${lg.r}.` + (isFinite(kgN) && lg.sets >= st.rounds ? ` Se foi fácil, tente ${nf(kgN + 2, kgN % 1 ? 1 : 0)} kg.` : '') : `Última vez (${d}): sem carga anotada.`;
+    }
     $('#pl-fill').style.width = (P.i / P.steps.length * 100) + '%';
     $('#pl-main').textContent = st.sec ? (P.paused ? 'Continuar' : 'Pausar') : 'Feito';
   }
@@ -1412,23 +1512,31 @@
   /* ---------- histórico e detalhe ---------- */
   function routeSvg(pts) {
     if (!pts || pts.length < 2) return '<p class="muted">Trajeto não registrado (sem sinal de GPS).</p>';
-    const lat0 = pts.reduce((a, p) => a + p[0], 0) / pts.length;
-    const k = Math.cos(lat0 * Math.PI / 180);
-    const xy = pts.map(p => [p[1] * k, -p[0]]);
-    const xs = xy.map(p => p[0]), ys = xy.map(p => p[1]);
-    const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
-    const W = 320, H = 200, Pd = 18;
-    const w = (maxX - minX) || 1e-9, h = (maxY - minY) || 1e-9;
-    const sc = Math.min((W - 2 * Pd) / w, (H - 2 * Pd) / h);
-    const ox = (W - w * sc) / 2, oy = (H - h * sc) / 2;
-    const m = xy.map(p => [ox + (p[0] - minX) * sc, oy + (p[1] - minY) * sc]);
-    const path = m.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
-    const a = m[0], b = m[m.length - 1];
-    return `<svg class="route" viewBox="0 0 ${W} ${H}" role="img" aria-label="Mapa do trajeto">
+    const W = 320, H = 200, Pd = 26;
+    const mx = lon => (lon + 180) / 360;
+    const my = lat => { const sn = Math.sin(lat * Math.PI / 180); return 0.5 - Math.log((1 + sn) / (1 - sn)) / (4 * Math.PI); };
+    const xs = pts.map(q => mx(q[1])), ys = pts.map(q => my(q[0]));
+    const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+    let z = 18;
+    for (; z > 2; z--) { const n = 256 * 2 ** z; if ((x1 - x0) * n <= W - 2 * Pd && (y1 - y0) * n <= H - 2 * Pd) break; }
+    z = Math.min(z, 17);
+    const n = 256 * 2 ** z, ox = (x0 + x1) / 2 * n - W / 2, oy = (y0 + y1) / 2 * n - H / 2, tn = 2 ** z;
+    let tiles = '';
+    for (let tx = Math.floor(ox / 256); tx <= Math.floor((ox + W) / 256); tx++)
+      for (let ty = Math.floor(oy / 256); ty <= Math.floor((oy + H) / 256); ty++) {
+        if (ty < 0 || ty >= tn) continue;
+        tiles += `<image class="tile" href="https://tile.openstreetmap.org/${z}/${((tx % tn) + tn) % tn}/${ty}.png" x="${(tx * 256 - ox).toFixed(1)}" y="${(ty * 256 - oy).toFixed(1)}" width="256" height="256"/>`;
+      }
+    const m = xs.map((x, i) => [x * n - ox, ys[i] * n - oy]);
+    const path = m.map((q, i) => (i ? 'L' : 'M') + q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join(' ');
+    const a = m[0], e = m[m.length - 1];
+    return `<svg class="route" viewBox="0 0 ${W} ${H}" role="img" aria-label="Mapa do trajeto" style="background:var(--bg);border-radius:12px">
+      ${tiles}
+      <path d="${path}" fill="none" stroke="#fff" stroke-opacity=".9" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
       <path d="${path}" fill="none" stroke="var(--accent)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-      <circle cx="${a[0]}" cy="${a[1]}" r="6" fill="var(--surface)" stroke="var(--ink)" stroke-width="3"/>
-      <circle cx="${b[0]}" cy="${b[1]}" r="6" fill="var(--ink)"/>
-    </svg>`;
+      <circle cx="${a[0].toFixed(1)}" cy="${a[1].toFixed(1)}" r="6" fill="#fff" stroke="#0B2545" stroke-width="3"/>
+      <circle cx="${e[0].toFixed(1)}" cy="${e[1].toFixed(1)}" r="6" fill="#0B2545" stroke="#fff" stroke-width="2"/>
+    </svg><p class="attr">Mapa © colaboradores do OpenStreetMap (precisa de internet)</p>`;
   }
 
   function fmtDate(iso) {
@@ -1498,20 +1606,200 @@
     $('#dlg').showModal();
   }
 
+  /* ---------- progresso: metas, gráficos e ajustes ---------- */
+  const dkey = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const monday = d => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
+  const shortDate = d => `${pad(d.getDate())}/${pad(d.getMonth() + 1)}`;
+  function progStats() {
+    const h = store.get(HIST_KEY, []);
+    const days = new Set(h.map(x => dkey(new Date(x.date))));
+    const d = new Date(); d.setHours(0, 0, 0, 0);
+    if (!days.has(dkey(d))) d.setDate(d.getDate() - 1);
+    let streak = 0;
+    while (days.has(dkey(d))) { streak++; d.setDate(d.getDate() - 1); }
+    const wk = new Map();
+    h.forEach(x => { const k = dkey(monday(new Date(x.date))); wk.set(k, (wk.get(k) || 0) + 1); });
+    const goal = prefs.goal || 3, cur = wk.get(dkey(monday(new Date()))) || 0;
+    const w = monday(new Date()); if (cur < goal) w.setDate(w.getDate() - 7);
+    let weeks = 0;
+    while ((wk.get(dkey(w)) || 0) >= goal) { weeks++; w.setDate(w.getDate() - 7); }
+    return { h, streak, cur, goal, weeks, wk };
+  }
+  function lastWeeks(n) {
+    const out = [], w = monday(new Date());
+    w.setDate(w.getDate() - 7 * (n - 1));
+    for (let i = 0; i < n; i++) { out.push(new Date(w)); w.setDate(w.getDate() + 7); }
+    return out;
+  }
+  function barChart(items, o) {
+    const W = 320, H = 150, L = 8, R = 8, T = 22, B = 22;
+    const max = Math.max(o.goal || 0, ...items.map(i => i.v), 1e-9);
+    const slot = (W - L - R) / items.length, bw = Math.min(26, slot * 0.6);
+    const y = v => T + (H - T - B) * (1 - v / max);
+    let g = `<line class="ax" x1="${L}" x2="${W - R}" y1="${H - B}" y2="${H - B}"/>`;
+    const peak = Math.max(...items.map(i => i.v));
+    items.forEach((it, i) => {
+      const x = L + slot * i + (slot - bw) / 2, top = Math.min(y(it.v), H - B - 5);
+      if (it.v > 0) g += `<path d="M${x.toFixed(1)} ${H - B} V${top + 4} Q${x.toFixed(1)} ${top} ${(x + 4).toFixed(1)} ${top} H${(x + bw - 4).toFixed(1)} Q${(x + bw).toFixed(1)} ${top} ${(x + bw).toFixed(1)} ${top + 4} V${H - B} Z" fill="var(--accent)"><title>${esc(it.l)}: ${esc(o.fmt(it.v))}</title></path>`;
+      if (it.v > 0 && (i === items.length - 1 || it.v === peak)) g += `<text class="val" x="${(x + bw / 2).toFixed(1)}" y="${top - 5}" text-anchor="middle">${esc(o.fmt(it.v))}</text>`;
+      g += `<text x="${(x + bw / 2).toFixed(1)}" y="${H - 7}" text-anchor="middle">${esc(it.l)}</text>`;
+    });
+    if (o.goal) g += `<line x1="${L}" x2="${W - R}" y1="${y(o.goal).toFixed(1)}" y2="${y(o.goal).toFixed(1)}" stroke="var(--muted)" stroke-dasharray="4 3"/><text x="${W - R}" y="${(y(o.goal) - 4).toFixed(1)}" text-anchor="end">meta ${o.goal}</text>`;
+    return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.label)}">${g}</svg>`;
+  }
+  function lineChart(pts, o) {
+    const W = 320, H = 150, L = 38, R = 14, T = 20, B = 24;
+    const vals = pts.map(q => q.v);
+    let lo = Math.min(...vals), hi = Math.max(...vals);
+    if (lo === hi) { lo -= 1; hi += 1; }
+    const pd = (hi - lo) * 0.12; lo -= pd; hi += pd;
+    const n = pts.length;
+    const x = i => n === 1 ? (L + W - R) / 2 : L + (W - L - R) * i / (n - 1);
+    const y = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
+    let g = '';
+    [lo + pd, (lo + hi) / 2, hi - pd].forEach(v => { g += `<line class="ax" x1="${L}" x2="${W - R}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}"/><text x="${L - 5}" y="${(y(v) + 4).toFixed(1)}" text-anchor="end">${esc(o.fmt(v))}</text>`; });
+    if (n > 1) g += `<polyline points="${pts.map((q, i) => x(i).toFixed(1) + ',' + y(q.v).toFixed(1)).join(' ')}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    pts.forEach((q, i) => { g += `<circle cx="${x(i).toFixed(1)}" cy="${y(q.v).toFixed(1)}" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"><title>${esc(q.l)}: ${esc(o.fmt(q.v))}</title></circle>`; });
+    const li = n - 1;
+    g += `<text class="val" x="${x(li).toFixed(1)}" y="${(y(pts[li].v) - 9).toFixed(1)}" text-anchor="${n > 1 ? 'end' : 'middle'}">${esc(o.fmt(pts[li].v))}</text>`;
+    g += `<text x="${x(0).toFixed(1)}" y="${H - 7}" text-anchor="${n > 1 ? 'start' : 'middle'}">${esc(pts[0].l)}</text>`;
+    if (n > 1) g += `<text x="${x(li).toFixed(1)}" y="${H - 7}" text-anchor="end">${esc(pts[li].l)}</text>`;
+    return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.label)}">${g}</svg>`;
+  }
+  const numList = (pts, fmt) => `<details style="margin-top:6px"><summary class="muted" style="cursor:pointer">Ver números</summary><ul class="sess-list" style="margin:6px 0 0">${pts.map(q => `<li>${esc(q.l)}: ${esc(fmt(q.v))}</li>`).join('')}</ul></details>`;
+  const toNum = v => { const x = parseFloat(String(v).replace(',', '.')); return isFinite(x) ? x : NaN; };
+  const REM_DAYS = [[1, 'Seg'], [2, 'Ter'], [3, 'Qua'], [4, 'Qui'], [5, 'Sex'], [6, 'Sáb'], [0, 'Dom']];
+  const UIP = { ex: '' };
+
+  function renderProg() {
+    const st = progStats(), h = st.h;
+    const pct = Math.min(100, st.cur / st.goal * 100);
+    let out = `<div class="panel"><h2>Meta da semana</h2>
+      <div><b>${st.cur}</b> de <b>${st.goal}</b> treinos esta semana${st.cur >= st.goal ? ' — meta batida!' : ''}</div>
+      <div class="goalbar" role="progressbar" aria-valuemin="0" aria-valuemax="${st.goal}" aria-valuenow="${Math.min(st.cur, st.goal)}"><i style="width:${pct}%"></i></div>
+      <div class="kpis"><div><div class="v">${st.streak}</div><div class="l">${st.streak === 1 ? 'dia seguido' : 'dias seguidos'}</div></div>
+      <div><div class="v">${st.weeks}</div><div class="l">${st.weeks === 1 ? 'semana na meta' : 'semanas na meta'}</div></div>
+      <div><div class="v">${h.length}</div><div class="l">treinos no total</div></div></div></div>`;
+
+    const wk = lastWeeks(8);
+    const cnt = wk.map(d => ({ l: shortDate(d), v: st.wk.get(dkey(d)) || 0 }));
+    out += `<div class="panel"><h2>Treinos por semana</h2>${barChart(cnt, { goal: st.goal, fmt: v => String(v), label: 'Treinos por semana, últimas 8 semanas' })}${numList(cnt, v => v + (v === 1 ? ' treino' : ' treinos'))}</div>`;
+
+    const kmw = wk.map(d => {
+      const t0 = d.getTime(), t1 = t0 + 7 * 864e5;
+      return { l: shortDate(d), v: h.filter(x => { const t = new Date(x.date).getTime(); return t >= t0 && t < t1 && x.dist > 0; }).reduce((a, x) => a + x.dist, 0) / 1000 };
+    });
+    if (kmw.some(i => i.v > 0)) out += `<div class="panel"><h2>Quilômetros por semana</h2>${barChart(kmw, { fmt: v => nf(v, 1) + ' km', label: 'Quilômetros por semana' })}${numList(kmw, v => nf(v, 1) + ' km')}</div>`;
+
+    const byDay = new Map();
+    h.slice().reverse().forEach(x => { if (x.weight > 0) byDay.set(dkey(new Date(x.date)), { l: shortDate(new Date(x.date)), v: +x.weight }); });
+    const wp = [...byDay.values()].slice(-12);
+    out += `<div class="panel"><h2>Peso</h2>${wp.length >= 2 ? lineChart(wp, { fmt: v => nf(v, 1), label: 'Peso em kg ao longo do tempo' }) + numList(wp, v => nf(v, 1) + ' kg') : '<p class="muted" style="margin:0">O gráfico aparece depois de treinos em dias diferentes. O peso usado é o que está na tela Treino.</p>'}</div>`;
+
+    const evo = store.get(EVO_KEY, {});
+    const cp = Object.keys(evo).map(Number).sort((a, b) => a - b).map(k => ({ l: 'Sem ' + k, v: toNum(evo[k].cintura) })).filter(q => !isNaN(q.v));
+    if (cp.length) out += `<div class="panel"><h2>Cintura</h2>${lineChart(cp, { fmt: v => nf(v, 1), label: 'Cintura em cm por semana' })}${numList(cp, v => nf(v, 1) + ' cm')}</div>`;
+
+    const names = [...new Set(h.filter(x => x.act === 'gym' && x.gym).flatMap(x => x.gym.map(e => e.n)))];
+    if (names.length) {
+      if (!names.includes(UIP.ex)) UIP.ex = names[0];
+      const lp = h.slice().reverse().filter(x => x.act === 'gym' && x.gym).map(x => { const e = x.gym.find(g => g.n === UIP.ex); return e ? { l: shortDate(new Date(x.date)), v: toNum(e.kg) } : null; }).filter(q => q && !isNaN(q.v)).slice(-12);
+      out += `<div class="panel"><h2>Carga por exercício</h2><select id="pg-ex" aria-label="Exercício">${names.map(n => `<option${n === UIP.ex ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select>
+        <div style="margin-top:10px">${lp.length ? lineChart(lp, { fmt: v => nf(v, v % 1 ? 1 : 0), label: 'Carga em kg de ' + UIP.ex }) + numList(lp, v => nf(v, 1) + ' kg') : '<p class="muted" style="margin:0">Sem cargas anotadas para este exercício ainda. Anote o peso durante o treino.</p>'}</div></div>`;
+    }
+
+    const rm = prefs.remind || { days: [1, 3, 5], time: '18:00' };
+    const seg = (a, opts, cur) => `<div class="seg" role="group">${opts.map(([v, t]) => `<button type="button" data-a="${a}" data-v="${v}" aria-pressed="${String(cur) === String(v)}">${t}</button>`).join('')}</div>`;
+    out += `<div class="panel"><h2>Ajustes</h2>
+      <div class="fld" style="margin-top:0"><label>Meta de treinos por semana</label>${seg('goal', [2, 3, 4, 5, 6].map(v => [v, v]), prefs.goal)}</div>
+      <div class="fld"><label>Tema</label>${seg('theme', [['auto', 'Automático'], ['light', 'Claro'], ['dark', 'Escuro']], prefs.theme)}</div>
+      <div class="fld"><label>Tamanho da letra</label>${seg('zoom', [[1, 'Normal'], [1.1, 'Grande'], [1.2, 'Maior']], prefs.zoom)}</div></div>
+      <div class="panel"><h2>Lembretes de treino</h2>
+      <p class="muted" style="margin:0 0 4px">O aviso vem do calendário do seu celular, mesmo com o app fechado. Escolha os dias e a hora e adicione ao calendário.</p>
+      <div class="daychips" role="group" aria-label="Dias">${REM_DAYS.map(([v, t]) => `<label><input type="checkbox" name="rmday" value="${v}"${rm.days.includes(v) ? ' checked' : ''}><span>${t}</span></label>`).join('')}</div>
+      <label class="muted" for="rm-time" style="font-size:14px">Hora</label><input id="rm-time" type="time" value="${esc(rm.time)}" style="margin-top:4px">
+      <button class="btn small" style="margin-top:12px" data-a="remind">Adicionar ao calendário</button>
+      <p class="hint" id="rm-msg" role="status"></p></div>
+      <div class="panel"><h2>Seus dados</h2><p class="muted" style="margin:0 0 10px">Baixe o histórico em uma planilha (abre no Excel e no Google Planilhas).</p>
+      <button class="btn small secondary" data-a="export"${h.length ? '' : ' disabled'}>Baixar histórico (CSV)</button></div>`;
+    $('#view-prog').innerHTML = out;
+  }
+
+  function download(text, name, type) {
+    const b = new Blob([text], { type }), u = URL.createObjectURL(b), a = document.createElement('a');
+    a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(u), 5000);
+  }
+  function exportCsv() {
+    const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+    const rows = [['Data', 'Hora', 'Tipo', 'Plano', 'Distância (km)', 'Tempo (min)', 'Calorias (kcal)', 'Ritmo médio (min/km)', 'Peso (kg)', 'Exercícios']];
+    store.get(HIST_KEY, []).slice().reverse().forEach(x => {
+      const d = new Date(x.date), km = x.dist / 1000;
+      rows.push([d.toLocaleDateString('pt-BR'), d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        ACT[x.act] ? ACT[x.act].label : x.act, x.plan || '', x.dist > 0 ? nf(km, 2) : '', nf(x.ms / 60000, 1), nf(x.kcal, 0),
+        x.dist > 20 ? fmtPace(x.ms / 1000 / km) : '', x.weight ? nf(+x.weight, 1) : '',
+        x.gym ? x.gym.map(e => `${e.n} ${e.sets}x${e.r}${e.kg ? ' ' + e.kg + 'kg' : ''}`).join(' | ') : '']);
+    });
+    download('﻿' + rows.map(r => r.map(q).join(';')).join('\r\n'), 'treino-historico.csv', 'text/csv;charset=utf-8');
+  }
+  function remindIcs() {
+    const r = prefs.remind, [hh, mm] = String(r.time).split(':').map(Number), BY = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+    const now = new Date(), z = d => d.toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
+    const url = location.href.split('#')[0].split('?')[0];
+    const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Treino//PT-BR//', 'CALSCALE:GREGORIAN'];
+    r.days.forEach(d => {
+      const st = new Date(); st.setHours(hh, mm, 0, 0);
+      let add = (d - st.getDay() + 7) % 7; if (add === 0 && st < now) add = 7;
+      st.setDate(st.getDate() + add);
+      L.push('BEGIN:VEVENT', `UID:treino-${d}-${pad(hh)}${pad(mm)}@treino`, `DTSTAMP:${z(now)}`,
+        `DTSTART:${st.getFullYear()}${pad(st.getMonth() + 1)}${pad(st.getDate())}T${pad(hh)}${pad(mm)}00`, 'DURATION:PT1H',
+        `RRULE:FREQ=WEEKLY;BYDAY=${BY[d]}`, 'SUMMARY:Hora do treino', `DESCRIPTION:Abra o app Treino: ${url}`,
+        'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:Hora do treino', 'TRIGGER:-PT10M', 'END:VALARM', 'END:VEVENT');
+    });
+    L.push('END:VCALENDAR');
+    download(L.join('\r\n'), 'treino-lembretes.ics', 'text/calendar;charset=utf-8');
+  }
+  $('#view-prog').addEventListener('click', e => {
+    const b = e.target.closest('[data-a]'); if (!b) return;
+    const a = b.dataset.a;
+    if (a === 'goal') { prefs.goal = +b.dataset.v; savePrefs(); renderProg(); }
+    else if (a === 'theme') { prefs.theme = b.dataset.v; savePrefs(); applyLook(); renderProg(); }
+    else if (a === 'zoom') { prefs.zoom = +b.dataset.v; savePrefs(); applyLook(); renderProg(); }
+    else if (a === 'export') exportCsv();
+    else if (a === 'remind') {
+      if (!prefs.remind.days.length) { $('#rm-msg').textContent = 'Escolha pelo menos um dia.'; return; }
+      remindIcs();
+      $('#rm-msg').textContent = 'Arquivo gerado. Abra-o para adicionar ao calendário. Para mudar os dias, apague os eventos antigos no calendário.';
+    }
+  });
+  $('#view-prog').addEventListener('change', e => {
+    const t = e.target;
+    if (t.id === 'pg-ex') { UIP.ex = t.value; renderProg(); }
+    else if (t.name === 'rmday') {
+      prefs.remind = Object.assign({ days: [], time: '18:00' }, prefs.remind);
+      prefs.remind.days = [...document.querySelectorAll('input[name="rmday"]:checked')].map(x => +x.value); savePrefs();
+    } else if (t.id === 'rm-time') {
+      prefs.remind = Object.assign({ days: [], time: '18:00' }, prefs.remind);
+      if (t.value) { prefs.remind.time = t.value; savePrefs(); }
+    }
+  });
+
   /* ---------- abas ---------- */
   function selectTab(which) {
-    ['train', 'plans', 'hist'].forEach(t => {
+    ['train', 'plans', 'hist', 'prog'].forEach(t => {
       $('#tab-' + t).setAttribute('aria-selected', String(t === which));
       $('#view-' + t).hidden = t !== which;
     });
     if (which === 'hist') renderHistory();
     if (which === 'plans') renderPlans();
+    if (which === 'prog') renderProg();
   }
 
   /* ---------- eventos ---------- */
   $('#tab-train').addEventListener('click', () => selectTab('train'));
   $('#tab-plans').addEventListener('click', () => selectTab('plans'));
   $('#tab-hist').addEventListener('click', () => selectTab('hist'));
+  $('#tab-prog').addEventListener('click', () => selectTab('prog'));
   $('#btn-start').addEventListener('click', () => begin());
   $('#btn-pause').addEventListener('click', () => S.status === 'running' ? pause() : resume());
   $('#btn-finish').addEventListener('click', finish);
@@ -1562,6 +1850,8 @@
   function applyPrefsToInputs() {
     $('#weight').value = prefs.weight;
     applySoundInputs();
+    $('#pace-goal').value = prefs.pace ? fmtPace(prefs.pace) : '';
+    applyLook();
     const r = document.querySelector(`input[name="act"][value="${prefs.act}"]`);
     if (r) r.checked = true;
   }
@@ -1570,7 +1860,7 @@
     return {
       history: store.get(HIST_KEY, []), done: store.get(DONE_KEY, {}), evo: store.get(EVO_KEY, {}),
       deleted: store.get(DEL_KEY, {}), gym: store.get(GYM_KEY, {}),
-      settings: { weight: prefs.weight, act: prefs.act, voice: !!prefs.voice, mode: prefs.mode, vol: prefs.vol }, settingsT: prefs.t || 0
+      settings: { weight: prefs.weight, act: prefs.act, voice: !!prefs.voice, mode: prefs.mode, vol: prefs.vol, theme: prefs.theme, zoom: prefs.zoom, goal: prefs.goal, pace: prefs.pace, remind: prefs.remind }, settingsT: prefs.t || 0
     };
   }
   // Junta dados remotos com os locais (nada é perdido) e devolve o resultado.
@@ -1753,6 +2043,10 @@
   window.addEventListener('treino:cloud-ready', () => { Gate.cloud = 'ready'; if (Gate.shown) renderGate(); updateGate(); });
   window.addEventListener('treino:cloud-off', () => { Gate.cloud = 'off'; updateGate(); });
   window.addEventListener('treino:cloud-fail', () => { if (Gate.cloud === 'wait') { Gate.cloud = 'fail'; if (Gate.shown) renderGate(); } });
+  $('#pace-goal').addEventListener('change', () => {
+    prefs.pace = parsePace($('#pace-goal').value); savePrefs();
+    $('#pace-goal').value = prefs.pace ? fmtPace(prefs.pace) : '';
+  });
   $('#weight').addEventListener('change', () => {
     const w = parseFloat(String($('#weight').value).replace(',', '.'));
     if (w >= 30 && w <= 250) { prefs.weight = w; savePrefs(); }
@@ -1763,6 +2057,7 @@
   /* ---------- início ---------- */
   $('#weight').value = prefs.weight;
   applySoundInputs();
+  $('#pace-goal').value = prefs.pace ? fmtPace(prefs.pace) : '';
   const r0 = document.querySelector(`input[name="act"][value="${prefs.act}"]`);
   if (r0) r0.checked = true;
   if (store.get(SNAP_KEY, null)) $('#resume-banner').hidden = false;

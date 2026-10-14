@@ -22,6 +22,14 @@ Ajustes que o app faz na ficha de casa: o número de séries segue a tabela de p
 Onde a ficha não indica descanso entre séries, o app usa 45 s (dá para pular).
 
 
+## Progresso, metas e ajustes (aba Progresso)
+
+- Meta semanal de treinos, dias seguidos e semanas na meta.
+- Gráficos: treinos e km por semana, peso, cintura e carga por exercício.
+- Tema claro/escuro, tamanho da letra, lembretes pelo calendário do celular e exportação do histórico em CSV.
+- Na academia, o app mostra a imagem do exercício e a carga da última vez.
+- Na corrida, ritmo ao vivo e ritmo alvo opcional com aviso de voz/bipe. O histórico mostra o trajeto sobre o mapa (OpenStreetMap).
+
 ## Contas e nuvem (opcional)
 
 O app aceita vários usuários, cada um com login (e-mail e senha) e dados próprios na nuvem, via Firebase.
