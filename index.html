@@ -379,6 +379,11 @@
   .ph span { position: absolute; left: 6px; bottom: 6px; background: rgba(26,15,51,.75); color: #fff; font-size: 12px; font-weight: 600; border-radius: 8px; padding: 2px 7px; }
   .phv { display: grid; gap: 8px; } .phv.two { grid-template-columns: 1fr 1fr; }
   .phv figure { margin: 0; } .phv img { width: 100%; border-radius: 14px; display: block; } .phv figcaption { text-align: center; font-size: 14px; color: var(--muted); margin-top: 4px; }
+  .swatches { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+  .sw { width: 38px; height: 38px; border-radius: 50%; border: 3px solid var(--surface); box-shadow: 0 0 0 2px var(--line); cursor: pointer; padding: 0; position: relative; display: block; }
+  .sw[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--ink); }
+  .sw.custom { background: conic-gradient(#e33, #fc3, #3c6, #39f, #93f, #e33); overflow: hidden; }
+  .sw.custom input { position: absolute; inset: -8px; width: 60px; height: 60px; opacity: 0; cursor: pointer; }
   .prbox { background: color-mix(in srgb, var(--heat) 14%, var(--surface)); border-radius: 14px; padding: 10px 14px; margin: 12px 0 0; }
   .pips-row { display: flex; justify-content: center; gap: 8px; margin: 10px 0 0; min-height: 12px; }
   .pips-row i { width: 28px; height: 8px; border-radius: 99px; background: var(--line); }
@@ -645,15 +650,27 @@
   /* ---------- preferências ---------- */
   const SNAP_KEY = 'snapshot', HIST_KEY = 'history', SET_KEY = 'settings',
         DONE_KEY = 'done', EVO_KEY = 'evo', DEL_KEY = 'deleted', GYM_KEY = 'gym';
-  const loadPrefs = () => Object.assign({ weight: 70, act: 'run', voice: true, mode: 'all', vol: 50, theme: 'auto', zoom: 1, goal: 3, pace: 0, warm: false, stretch: false, rgoal: '', autop: false, remind: { days: [1, 3, 5], time: '18:00' } }, store.get(SET_KEY, {}));
+  const loadPrefs = () => Object.assign({ weight: 70, act: 'run', voice: true, mode: 'all', vol: 50, theme: 'auto', zoom: 1, goal: 3, pace: 0, accent: '', warm: false, stretch: false, rgoal: '', autop: false, remind: { days: [1, 3, 5], time: '18:00' } }, store.get(SET_KEY, {}));
   let prefs = loadPrefs();
   function savePrefs() { prefs.t = Date.now(); store.set(SET_KEY, prefs); changed(); }
   function applyLook() {
     const r = document.documentElement;
     if (prefs.theme === 'light' || prefs.theme === 'dark') r.dataset.theme = prefs.theme; else delete r.dataset.theme;
     r.style.zoom = prefs.zoom > 1 ? String(prefs.zoom) : '';
+    const hex = /^#[0-9a-f]{6}$/i.test(prefs.accent || '') ? prefs.accent : '';
+    if (!hex) { r.style.removeProperty('--accent'); r.style.removeProperty('--accent-ink'); return; }
+    const dark = prefs.theme === 'dark' || (prefs.theme !== 'light' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+    const pr = ACCENTS.find(a => a[1].toLowerCase() === hex.toLowerCase());
+    const col = dark ? (pr ? pr[2] : mixWhite(hex, 0.38)) : hex;
+    r.style.setProperty('--accent', col);
+    r.style.setProperty('--accent-ink', lum(col) > 0.179 ? '#140A2B' : '#FFFFFF');
   }
+  const ACCENTS = [['Violeta', '#6A3DF0', '#A187FF'], ['Azul', '#1D5FD8', '#6EA0FF'], ['Turquesa', '#0E8A83', '#4FD1C5'], ['Verde', '#1E8E4E', '#5FD08A'], ['Laranja', '#D4590F', '#FF9A5C'], ['Rosa', '#D6336C', '#FF7FA8'], ['Vermelho', '#D32F2F', '#FF8A80']];
+  const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const lum = h => { const [r, g, b] = rgb(h).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+  const mixWhite = (h, t) => '#' + rgb(h).map(v => Math.round(v + (255 - v) * t).toString(16).padStart(2, '0')).join('');
   applyLook();
+  if (window.matchMedia) { try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyLook); } catch {} }
   const parsePace = t => { const m = String(t).trim().match(/^(\d{1,2})(?::(\d{2}))?$/); if (!m) return 0; const sec = +m[1] * 60 + (m[2] ? +m[2] : 0); return sec >= 120 && sec <= 1200 ? sec : 0; };
 
   /* ---------- avisos: som, vibração e voz ---------- */
@@ -2202,6 +2219,7 @@
     out += `<div class="panel"><h2>Ajustes</h2>
       <div class="fld" style="margin-top:0"><label>Meta de treinos por semana</label>${seg('goal', [2, 3, 4, 5, 6].map(v => [v, v]), prefs.goal)}</div>
       <div class="fld"><label>Tema</label>${seg('theme', [['auto', 'Automático'], ['light', 'Claro'], ['dark', 'Escuro']], prefs.theme)}</div>
+      <div class="fld"><label>Cor do app</label><div class="swatches" role="group" aria-label="Cor do app">${ACCENTS.map(a => `<button type="button" class="sw" data-a="accent" data-v="${a[1]}" style="background:${a[1]}" aria-label="${a[0]}" aria-pressed="${(prefs.accent || ACCENTS[0][1]).toLowerCase() === a[1].toLowerCase()}"></button>`).join('')}<label class="sw custom" aria-label="Escolher outra cor" style="${prefs.accent && !ACCENTS.some(a => a[1].toLowerCase() === prefs.accent.toLowerCase()) ? 'background:' + esc(prefs.accent) : ''}"><input type="color" id="acc-custom" value="${esc(prefs.accent || '#6a3df0')}"></label></div></div>
       <div class="fld"><label>Tamanho da letra</label>${seg('zoom', [[1, 'Normal'], [1.1, 'Grande'], [1.2, 'Maior']], prefs.zoom)}</div></div>
       <div class="panel"><h2>Lembretes de treino</h2>
       <p class="muted" style="margin:0 0 4px">O aviso vem do calendário do seu celular, mesmo com o app fechado. Escolha os dias e a hora e adicione ao calendário.</p>
@@ -2262,6 +2280,7 @@
     const a = b.dataset.a;
     if (a === 'goal') { prefs.goal = +b.dataset.v; savePrefs(); renderProg(); }
     else if (a === 'theme') { prefs.theme = b.dataset.v; savePrefs(); applyLook(); renderProg(); }
+    else if (a === 'accent') { prefs.accent = b.dataset.v === ACCENTS[0][1] ? '' : b.dataset.v; savePrefs(); applyLook(); renderProg(); }
     else if (a === 'zoom') { prefs.zoom = +b.dataset.v; savePrefs(); applyLook(); renderProg(); }
     else if (a === 'export') exportCsv();
     else if (a === 'bk-down') backupDownload();
@@ -2278,7 +2297,8 @@
   });
   $('#view-prog').addEventListener('change', e => {
     const t = e.target;
-    if (t.id === 'pg-ex') { UIP.ex = t.value; renderProg(); }
+    if (t.id === 'acc-custom') { prefs.accent = t.value; savePrefs(); applyLook(); renderProg(); }
+    else if (t.id === 'pg-ex') { UIP.ex = t.value; renderProg(); }
     else if (t.id === 'ph-file') { phAdd(t.files && t.files[0]); t.value = ''; }
     else if (t.id === 'bk-file') { backupRestore(t.files && t.files[0]); t.value = ''; }
     else if (t.name === 'rmday') {
@@ -2372,7 +2392,7 @@
     return {
       history: store.get(HIST_KEY, []), done: store.get(DONE_KEY, {}), evo: store.get(EVO_KEY, {}),
       deleted: store.get(DEL_KEY, {}), gym: store.get(GYM_KEY, {}),
-      settings: { weight: prefs.weight, act: prefs.act, voice: !!prefs.voice, mode: prefs.mode, vol: prefs.vol, theme: prefs.theme, zoom: prefs.zoom, goal: prefs.goal, pace: prefs.pace, warm: !!prefs.warm, stretch: !!prefs.stretch, rgoal: prefs.rgoal, autop: !!prefs.autop, remind: prefs.remind }, settingsT: prefs.t || 0
+      settings: { weight: prefs.weight, act: prefs.act, voice: !!prefs.voice, mode: prefs.mode, vol: prefs.vol, theme: prefs.theme, accent: prefs.accent, zoom: prefs.zoom, goal: prefs.goal, pace: prefs.pace, warm: !!prefs.warm, stretch: !!prefs.stretch, rgoal: prefs.rgoal, autop: !!prefs.autop, remind: prefs.remind }, settingsT: prefs.t || 0
     };
   }
   // Junta dados remotos com os locais (nada é perdido) e devolve o resultado.
