@@ -1446,6 +1446,8 @@
         lastEl.textContent = lg.kg ? `Última vez (${d}): ${fk(lg.kg)} kg, ${lg.sets}x${lg.r}.` + (isFinite(kgN) && lg.sets >= st.rounds ? ` Se foi fácil, tente ${fk(kgN + 2)} kg.` : '') : `Última vez (${d}): sem carga anotada.`;
       }
     }
+    $('#pl-fill').style.width = (P.i / P.steps.length * 100) + '%';
+    $('#pl-main').textContent = st.sec ? (P.paused ? 'Continuar' : 'Pausar') : 'Feito';
   }
   function bestKg(name) {
     let m = 0;
