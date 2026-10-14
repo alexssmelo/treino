@@ -302,7 +302,7 @@
         <label class="field-label" for="snd">Avisos nos treinos</label>
         <select id="snd">
           <option value="all">Voz, bipe e vibração</option>
-          <option value="beep">Só bipe e vibração (sem voz)</option>
+          <option value="beep">Só bipe e vibração (sem voz) — não pausa a música</option>
           <option value="off">Desligado</option>
         </select>
         <label class="field-label" for="vol" style="margin-top:14px">Volume do bipe</label>
@@ -475,8 +475,10 @@
     if (v !== 'off') prefs.mode = v;
     prefs.vol = clampInt($('#vol').value, 0, 100, 50);
   }
+  function mixAudio() { try { if (navigator.audioSession) navigator.audioSession.type = 'ambient'; } catch {} }
   function beep(freq = 880, ms = 160) {
     if (sound() === 'off') return;
+    mixAudio();
     try {
       audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -492,6 +494,7 @@
     try {
       if (!('speechSynthesis' in window)) return;
       if (cancel) speechSynthesis.cancel();
+      mixAudio();
       const u = new SpeechSynthesisUtterance(text);
       u.lang = 'pt-BR';
       speechSynthesis.speak(u);
