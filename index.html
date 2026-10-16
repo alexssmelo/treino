@@ -365,6 +365,10 @@
   .pl-name { font-weight: 900; font-size: 44px; }
   .setin { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-width: 360px; margin: 0 auto 8px; text-align: center; }
   .setin .fld { margin-top: 0; }
+  .gedit { margin: 12px 0 0; }
+  .gedit b { font-size: 15px; display: block; margin-bottom: 4px; }
+  .gset { display: grid; grid-template-columns: 1fr 90px 90px; gap: 8px; align-items: center; margin-top: 6px; }
+  .gset input { width: 100%; padding: 10px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--bg); color: var(--ink); font-size: 17px; text-align: center; }
   .setin input { text-align: center; font-size: 22px; font-weight: 700; }
   .sumgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   .sumv { font-size: 15px; color: var(--muted); } .sumv b { font-family: var(--display); font-weight: 900; font-size: 30px; color: var(--ink); }
@@ -593,6 +597,7 @@
     <button class="btn small" id="dlg-close">Fechar</button>
     <button class="btn small danger" id="dlg-delete" hidden>Excluir treino</button>
   </div>
+  <button class="btn small secondary" id="dlg-edit" style="margin-top:10px" hidden>Editar cargas e repetições</button>
   <button class="btn small secondary" id="dlg-share" style="margin-top:10px">Compartilhar imagem</button>
 </dialog>
 
@@ -1910,6 +1915,8 @@
         : `<p class="muted" style="margin:0">Ritmo médio: ${pace[0]} ${pace[1]}</p>`;
     }
     $('#dlg-delete').hidden = !canDelete;
+    $('#dlg-edit').hidden = !(h.act === 'gym' && h.gym && h.gym.length);
+    $('#dlg-edit').textContent = 'Editar cargas e repetições';
     $('#dlg').showModal();
   }
 
@@ -2393,6 +2400,38 @@
   $('#pl-end').addEventListener('click', () => finishHome(false));
   $('#dlg-close').addEventListener('click', () => $('#dlg').close());
   $('#sum-close').addEventListener('click', () => $('#sum').close());
+  function gymEditHtml(h) {
+    const fk = v => esc(String(v == null ? '' : v).replace('.', ','));
+    return '<h2 style="font-size:17px;font-family:var(--body);font-weight:600;margin:0 0 4px">Editar exercícios</h2>' +
+      h.gym.map((x, i) => {
+        const lg = x.log && x.log.length ? x.log : Array.from({ length: x.sets || 1 }, () => ({ kg: x.kg || '', r: String((String(x.r || '').match(/\d+/) || [''])[0]) }));
+        return `<div class="gedit" data-i="${i}"><b>${esc(x.n)}</b>` + lg.map((l, j) =>
+          `<div class="gset"><span>Série ${j + 1}</span><input type="text" inputmode="decimal" data-k="kg" value="${fk(l.kg)}" placeholder="kg" aria-label="Carga em kg, série ${j + 1}"><input type="text" inputmode="numeric" data-k="r" value="${fk(l.r)}" placeholder="reps" aria-label="Repetições, série ${j + 1}"></div>`).join('') + '</div>';
+      }).join('') + '<p class="muted" style="margin:10px 0 0">Esvazie a carga se foi sem peso. Toque em Salvar edição para guardar.</p>';
+  }
+  $('#dlg-edit').addEventListener('click', () => {
+    const hist = store.get(HIST_KEY, []), h = hist.find(x => x.id === openId);
+    if (!h || !h.gym) return;
+    const btn = $('#dlg-edit');
+    if (btn.textContent !== 'Salvar edição') {
+      $('#dlg-splits').innerHTML = gymEditHtml(h);
+      btn.textContent = 'Salvar edição';
+      return;
+    }
+    [...document.querySelectorAll('#dlg-splits .gedit')].forEach(box => {
+      const x = h.gym[+box.dataset.i];
+      x.log = [...box.querySelectorAll('.gset')].map(r => ({
+        kg: r.querySelector('[data-k=kg]').value.trim().replace(',', '.'),
+        r: r.querySelector('[data-k=r]').value.trim().replace(/\D/g, '') || '0'
+      }));
+      x.sets = x.log.length;
+      x.kg = x.log.length ? x.log[x.log.length - 1].kg : x.kg;
+    });
+    h.edited = Date.now();
+    store.set(HIST_KEY, hist);
+    renderHistory(); changed();
+    openDetail(h, true);
+  });
   $('#dlg-share').addEventListener('click', () => { const h = store.get(HIST_KEY, []).find(x => x.id === openId); if (h) shareEntry(h); });
   $('#dlg-delete').addEventListener('click', () => {
     if (!confirm('Excluir este treino do histórico?')) return;
@@ -2453,7 +2492,7 @@
     r = r || {};
     const deleted = Object.assign({}, store.get(DEL_KEY, {}), r.deleted || {});
     const byId = new Map();
-    [...store.get(HIST_KEY, []), ...(r.history || [])].forEach(h => { if (!deleted[h.id]) byId.set(String(h.id), h); });
+    [...store.get(HIST_KEY, []), ...(r.history || [])].forEach(h => { if (deleted[h.id]) return; const k = String(h.id), o = byId.get(k); if (!o || (h.edited || 0) > (o.edited || 0)) byId.set(k, h); });
     store.set(HIST_KEY, [...byId.values()].sort((a, b) => b.id - a.id));
     store.set(DEL_KEY, deleted);
     const dn = Object.assign({}, r.done || {});

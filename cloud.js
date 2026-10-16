@@ -76,8 +76,9 @@ const CDN = `https://www.gstatic.com/firebasejs/${V}/`;
       const merged = T.merge(remote);
 
       const remoteIds = new Set(remote.history.map(h => String(h.id)));
+      const remoteEd = new Map(remote.history.map(h => [String(h.id), h.edited || 0]));
       const ops = [];
-      merged.history.filter(h => !remoteIds.has(String(h.id))).forEach(h => ops.push(['set', h]));
+      merged.history.filter(h => !remoteIds.has(String(h.id)) || (h.edited || 0) > (remoteEd.get(String(h.id)) || 0)).forEach(h => ops.push(['set', h]));
       remote.history.filter(h => merged.deleted[h.id]).forEach(h => ops.push(['del', h]));
       for (let i = 0; i < ops.length; i += 400) {
         const b = FS.writeBatch(db);
